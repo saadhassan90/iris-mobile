@@ -11,6 +11,7 @@ interface MessageInputProps {
   isListening?: boolean;
   isConnecting?: boolean;
   disabled?: boolean;
+  hideVoiceButton?: boolean;
 }
 
 const MessageInput = ({
@@ -20,6 +21,7 @@ const MessageInput = ({
   isListening = false,
   isConnecting = false,
   disabled = false,
+  hideVoiceButton = false,
 }: MessageInputProps) => {
   const [textInput, setTextInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -70,23 +72,25 @@ const MessageInput = ({
           rows={1}
         />
         
-        {/* Voice button */}
-        <Button
-          size="icon"
-          variant={isConnecting ? "secondary" : "secondary"}
-          className={cn(
-            "h-11 w-11 shrink-0 rounded-full transition-all",
-            isConnecting && "animate-pulse"
-          )}
-          onClick={handleMicClick}
-          disabled={disabled || isConnecting}
-        >
-          {isConnecting ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Mic className="h-4 w-4" />
-          )}
-        </Button>
+        {/* Voice button - conditionally rendered */}
+        {!hideVoiceButton && (
+          <Button
+            size="icon"
+            variant={isConnecting ? "secondary" : "secondary"}
+            className={cn(
+              "h-11 w-11 shrink-0 rounded-full transition-all",
+              isConnecting && "animate-pulse"
+            )}
+            onClick={handleMicClick}
+            disabled={disabled || isConnecting}
+          >
+            {isConnecting ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+        )}
 
         {/* Send button */}
         <Button
