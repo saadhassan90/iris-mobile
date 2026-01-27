@@ -10,7 +10,7 @@ import { useTasks } from "@/hooks/useTasks";
 const Dashboard = () => {
   const [view, setView] = useState<"list" | "kanban">("list");
   const [newTaskTitle, setNewTaskTitle] = useState("");
-  const { tasks, addTask, moveTask, deleteTask } = useTasks();
+  const { tasks, addTask, moveTask, archiveTask } = useTasks();
 
   const handleAddTask = () => {
     if (!newTaskTitle.trim()) return;
@@ -61,7 +61,7 @@ const Dashboard = () => {
                     ? () => moveTask(task.id, task.status === "uncategorized" ? "todo" : task.status === "todo" ? "in_progress" : "done")
                     : undefined
                 }
-                onDelete={() => deleteTask(task.id)}
+                onArchive={() => archiveTask(task.id)}
               />
             ))
           )}
@@ -74,7 +74,7 @@ const Dashboard = () => {
               status="uncategorized"
               tasks={tasks}
               onMoveTask={moveTask}
-              onDeleteTask={deleteTask}
+              onArchiveTask={archiveTask}
             />
           </div>
           <div className="snap-center shrink-0">
@@ -83,7 +83,7 @@ const Dashboard = () => {
               status="todo"
               tasks={tasks}
               onMoveTask={moveTask}
-              onDeleteTask={deleteTask}
+              onArchiveTask={archiveTask}
             />
           </div>
           <div className="snap-center shrink-0">
@@ -92,7 +92,7 @@ const Dashboard = () => {
               status="in_progress"
               tasks={tasks}
               onMoveTask={moveTask}
-              onDeleteTask={deleteTask}
+              onArchiveTask={archiveTask}
             />
           </div>
           <div className="snap-center shrink-0">
@@ -101,7 +101,7 @@ const Dashboard = () => {
               status="done"
               tasks={tasks}
               onMoveTask={moveTask}
-              onDeleteTask={deleteTask}
+              onArchiveTask={archiveTask}
             />
           </div>
         </div>
