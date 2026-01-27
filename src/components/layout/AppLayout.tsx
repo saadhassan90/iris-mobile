@@ -1,5 +1,5 @@
 import { useState, ReactNode, createContext, useContext } from "react";
-import Header from "./Header";
+import ChatHeader from "@/components/chat/ChatHeader";
 import MobileNav from "./MobileNav";
 import { useConversations } from "@/hooks/useConversations";
 
@@ -36,7 +36,7 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
   return (
     <ConversationContext.Provider value={conversationState}>
       <div className="flex min-h-screen flex-col bg-background">
-        <Header onMenuClick={() => setMenuOpen(true)} title={title} />
+        <ChatHeader onMenuClick={() => setMenuOpen(true)} title={title} />
         <MobileNav 
           open={menuOpen} 
           onOpenChange={setMenuOpen}
