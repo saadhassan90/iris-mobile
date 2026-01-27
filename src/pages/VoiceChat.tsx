@@ -81,6 +81,10 @@ const VoiceChat = () => {
     }
   };
 
+  const handleSuggestionClick = (suggestion: string) => {
+    handleSendMessage(suggestion);
+  };
+
   return (
     <div className="flex flex-1 flex-col">
       {/* Chat thread */}
@@ -88,6 +92,7 @@ const VoiceChat = () => {
         messages={messages}
         isLoading={isLoading}
         onRetry={handleRetry}
+        onSuggestionClick={handleSuggestionClick}
       />
 
       {/* Text-only message input (voice disabled) */}
@@ -95,6 +100,7 @@ const VoiceChat = () => {
         onSendMessage={handleSendMessage}
         disabled={isLoading}
         hideVoiceButton={true}
+        placeholder="Ask Iris"
       />
     </div>
   );

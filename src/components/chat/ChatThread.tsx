@@ -3,6 +3,7 @@ import { ChevronDown, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import MessageBubble from "./MessageBubble";
+import SuggestionPills from "./SuggestionPills";
 import type { Message } from "@/hooks/useConversations";
 import { cn } from "@/lib/utils";
 
@@ -10,9 +11,10 @@ interface ChatThreadProps {
   messages: Message[];
   isLoading?: boolean;
   onRetry?: (messageId: string) => void;
+  onSuggestionClick?: (suggestion: string) => void;
 }
 
-const ChatThread = ({ messages, isLoading, onRetry }: ChatThreadProps) => {
+const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThreadProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [isNearBottom, setIsNearBottom] = useState(true);
@@ -43,26 +45,11 @@ const ChatThread = ({ messages, isLoading, onRetry }: ChatThreadProps) => {
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center p-8 text-center">
-        <div className="rounded-full bg-muted p-4 mb-4">
-          <svg
-            className="h-8 w-8 text-muted-foreground"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1.5}
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-        </div>
-        <h3 className="text-lg font-medium text-foreground mb-1">Start a conversation</h3>
-        <p className="text-sm text-muted-foreground max-w-[250px]">
-          Send a message or use voice to chat with your AI assistant
-        </p>
+      <div className="flex flex-1 flex-col items-center justify-center px-4">
+        <h1 className="text-2xl font-semibold text-foreground mb-8">
+          What can I help with?
+        </h1>
+        <SuggestionPills onSuggestionClick={onSuggestionClick} />
       </div>
     );
   }
