@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { Moon, Sun, Mic, Volume2, Info } from "lucide-react";
-import AppLayout from "@/components/layout/AppLayout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -26,8 +25,7 @@ const Settings = () => {
   };
 
   return (
-    <AppLayout title="Settings">
-      <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4 p-4">
         {/* Preferences */}
         <Card>
           <CardHeader>
@@ -123,8 +121,7 @@ const Settings = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
-    </AppLayout>
+    </div>
   );
 };
 
