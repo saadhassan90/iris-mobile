@@ -1,10 +1,13 @@
 import { useConversationContext } from "@/components/layout/AppLayout";
-import VoiceOrb from "@/components/voice/VoiceOrb";
 import ChatThread from "@/components/chat/ChatThread";
 import MessageInput from "@/components/chat/MessageInput";
-import { useIrisVoice } from "@/hooks/useIrisVoice";
-import { Button } from "@/components/ui/button";
-import { PhoneOff } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useRef } from "react";
+
+interface Message {
+  role: "user" | "assistant";
+  content: string;
+}
 
 const VoiceChat = () => {
   const {
@@ -15,50 +18,54 @@ const VoiceChat = () => {
     updateMessageStatus,
   } = useConversationContext();
 
-  const {
-    connectionState,
-    isSpeaking,
-    inputVolume,
-    outputVolume,
-    startCall,
-    endCall,
-  } = useIrisVoice({
-    onUserTranscript: (transcript) => {
-      const msg = addMessage(transcript, 'user');
-      // Mark as transferred since it came from voice
-      updateMessageStatus(msg.id, 'transferred');
-    },
-    onAgentResponse: (response) => {
-      addMessage(response, 'assistant');
-    },
-  });
-
-  const isVoiceActive = connectionState === "connected" || connectionState === "connecting";
-  const isConnecting = connectionState === "connecting";
+  // Keep conversation history for context
+  const conversationHistoryRef = useRef<Message[]>([]);
 
   const handleSendMessage = async (content: string) => {
-    // Add user message
+    // Add user message to UI
     const userMessage = addMessage(content, 'user');
     
-    // Simulate API call - delivered status
+    // Mark as delivered
     setTimeout(() => {
       updateMessageStatus(userMessage.id, 'delivered');
-    }, 500);
+    }, 300);
 
-    // Simulate transfer to AI agent
-    setTimeout(() => {
-      updateMessageStatus(userMessage.id, 'transferred');
-    }, 1000);
+    // Add to conversation history
+    conversationHistoryRef.current.push({ role: "user", content });
 
-    // Simulate AI response
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
+
+    try {
+      // Call clawdbot via edge function
+      const { data, error } = await supabase.functions.invoke("clawdbot-chat", {
+        body: {
+          message: content,
+          conversationHistory: conversationHistoryRef.current.slice(0, -1), // Exclude current message (already in 'message')
+        },
+      });
+
+      // Mark as transferred (reached AI agent)
+      updateMessageStatus(userMessage.id, 'transferred');
+
+      if (error) {
+        throw new Error(error.message || "Failed to get response");
+      }
+
+      const responseText = data?.response || "I couldn't process that request.";
+      
+      // Add assistant response to history and UI
+      conversationHistoryRef.current.push({ role: "assistant", content: responseText });
+      addMessage(responseText, 'assistant');
+
+    } catch (error) {
+      console.error("Chat error:", error);
       addMessage(
-        "I've received your message! This is a simulated response. Once connected to the clawdbot AI backend, you'll get real responses here.",
+        "Sorry, I encountered an error. Please try again.",
         'assistant'
       );
-    }, 2500);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleRetry = (messageId: string) => {
@@ -74,67 +81,6 @@ const VoiceChat = () => {
     }
   };
 
-  // Determine voice state for orb visualization
-  const getVoiceState = () => {
-    if (connectionState === "connecting") return "processing";
-    if (connectionState === "connected") {
-      if (isSpeaking) return "speaking";
-      return "listening";
-    }
-    return "idle";
-  };
-
-  const getStatusText = () => {
-    if (connectionState === "connecting") return "Connecting to Iris...";
-    if (connectionState === "connected") {
-      if (isSpeaking) return "Iris is speaking...";
-      return "Listening...";
-    }
-    return "";
-  };
-
-  // Voice Mode UI
-  if (isVoiceActive) {
-    return (
-      <div className="flex flex-1 flex-col">
-        {/* Voice orb section - centered when in voice mode */}
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <VoiceOrb 
-            state={getVoiceState()} 
-            inputVolume={inputVolume}
-            outputVolume={outputVolume}
-          />
-          <p className="mt-6 text-sm font-medium text-muted-foreground">
-            {getStatusText()}
-          </p>
-          
-          {/* End call button */}
-          <Button
-            variant="destructive"
-            size="lg"
-            className="mt-8 gap-2 rounded-full px-8"
-            onClick={endCall}
-          >
-            <PhoneOff className="h-5 w-5" />
-            End Call
-          </Button>
-        </div>
-
-        {/* Scrollable chat thread below (collapsed view) */}
-        {messages.length > 0 && (
-          <div className="border-t max-h-48 overflow-hidden">
-            <ChatThread
-              messages={messages}
-              isLoading={false}
-              onRetry={handleRetry}
-            />
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  // Text Mode UI (default)
   return (
     <div className="flex flex-1 flex-col">
       {/* Chat thread */}
@@ -144,14 +90,11 @@ const VoiceChat = () => {
         onRetry={handleRetry}
       />
 
-      {/* Message input with integrated voice button */}
+      {/* Text-only message input (voice disabled) */}
       <MessageInput
         onSendMessage={handleSendMessage}
-        onVoiceStart={startCall}
-        onVoiceStop={endCall}
-        isListening={false}
-        isConnecting={isConnecting}
         disabled={isLoading}
+        hideVoiceButton={true}
       />
     </div>
   );
