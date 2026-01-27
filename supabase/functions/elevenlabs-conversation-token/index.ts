@@ -2,7 +2,17 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  // NOTE: Supabase JS adds x-supabase-* headers in the browser; they must be allowed for CORS preflight.
+  "Access-Control-Allow-Headers": [
+    "authorization",
+    "x-client-info",
+    "apikey",
+    "content-type",
+    "x-supabase-client-platform",
+    "x-supabase-client-version",
+  ].join(", "),
+  "Access-Control-Allow-Methods": "GET,POST,OPTIONS",
+  "Access-Control-Max-Age": "86400",
 };
 
 const AGENT_ID = "agent_6901kf76kat3e6m9y7tmn3g76yea";
