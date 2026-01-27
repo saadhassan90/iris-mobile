@@ -3,41 +3,29 @@ import { Plus } from "lucide-react";
 import ViewToggle from "@/components/dashboard/ViewToggle";
 import TaskCard from "@/components/dashboard/TaskCard";
 import KanbanColumn from "@/components/dashboard/KanbanColumn";
+import CreateTaskSheet from "@/components/dashboard/CreateTaskSheet";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useTasks } from "@/hooks/useTasks";
+import { useTasks, TaskSource } from "@/hooks/useTasks";
 
 const Dashboard = () => {
   const [view, setView] = useState<"list" | "kanban">("list");
-  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const { tasks, addTask, moveTask, archiveTask } = useTasks();
 
-  const handleAddTask = () => {
-    if (!newTaskTitle.trim()) return;
-    addTask(newTaskTitle, "manual");
-    setNewTaskTitle("");
+  const handleCreateTask = (title: string, source: TaskSource, dueDate?: Date) => {
+    addTask(title, source, dueDate);
   };
 
   return (
     <div className="flex flex-1 flex-col gap-4 p-4">
-      {/* Add task input */}
-      <div className="flex gap-2">
-        <Input
-          placeholder="Add a new task..."
-          value={newTaskTitle}
-          onChange={(e) => setNewTaskTitle(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleAddTask()}
-          className="rounded-full"
-        />
-        <Button
-          size="icon"
-          className="h-10 w-10 shrink-0 rounded-full"
-          onClick={handleAddTask}
-          disabled={!newTaskTitle.trim()}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-      </div>
+      {/* Add task button */}
+      <Button
+        className="w-full rounded-full gap-2"
+        onClick={() => setIsCreateOpen(true)}
+      >
+        <Plus className="h-4 w-4" />
+        Add New Task
+      </Button>
 
       {/* View toggle */}
       <div className="flex justify-center">
@@ -106,6 +94,13 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
+      {/* Create Task Sheet */}
+      <CreateTaskSheet
+        open={isCreateOpen}
+        onOpenChange={setIsCreateOpen}
+        onCreateTask={handleCreateTask}
+      />
     </div>
   );
 };

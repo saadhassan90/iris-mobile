@@ -48,13 +48,14 @@ export const useTasks = () => {
     saveTasks(tasks);
   }, [tasks]);
 
-  const addTask = (title: string, source: TaskSource = "voice") => {
+  const addTask = (title: string, source: TaskSource = "voice", dueDate?: Date) => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       title,
       status: source === "manual" ? "todo" : "uncategorized",
       source,
       createdAt: new Date(),
+      dueDate,
     };
     setTasks((prev) => [newTask, ...prev]);
     return newTask;
