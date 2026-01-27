@@ -9,23 +9,15 @@ interface ChatHeaderProps {
 const ChatHeader = ({ onMenuClick, title = "ChatGPT" }: ChatHeaderProps) => {
   return (
     <header className="flex h-14 items-center justify-between px-4 bg-background">
-      <div className="flex items-center gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-10 w-10 shrink-0 rounded-full border-border"
-          onClick={onMenuClick}
-          aria-label="Open menu"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-        <Button
-          variant="outline"
-          className="h-10 rounded-full px-4 border-border font-medium"
-        >
-          {title}
-        </Button>
-      </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-10 w-10 shrink-0 rounded-full border-border"
+        onClick={onMenuClick}
+        aria-label="Open menu"
+      >
+        <Menu className="h-5 w-5" />
+      </Button>
       <div className="flex items-center gap-1">
         <Button
           variant="outline"
