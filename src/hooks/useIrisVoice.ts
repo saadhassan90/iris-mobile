@@ -88,22 +88,21 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       // Request microphone permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Get token from edge function
+      // Get signed URL from edge function
       const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
 
       if (error) {
-        throw new Error(error.message || "Failed to get conversation token");
+        throw new Error(error.message || "Failed to get signed URL");
       }
 
-      if (!data?.token) {
-        throw new Error("No token received from server");
+      if (!data?.signedUrl) {
+        throw new Error("No signed URL received from server");
       }
 
-      // Start the conversation with WebRTC
+      // Start the conversation with WebSocket (more stable than WebRTC)
       await conversation.startSession({
-        conversationToken: data.token,
-        connectionType: "webrtc",
-      } as any);
+        signedUrl: data.signedUrl,
+      });
 
     } catch (error: any) {
       console.error("Failed to start call:", error);
