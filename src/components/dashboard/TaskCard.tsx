@@ -11,6 +11,7 @@ interface TaskCardProps {
   onComplete?: () => void;
   onArchive?: () => void;
   compact?: boolean;
+  draggable?: boolean;
 }
 
 const statusColors: Record<TaskStatus, string> = {
@@ -43,9 +44,22 @@ const sourceLabels: Record<TaskSource, string> = {
   other: "Other",
 };
 
-const TaskCard = ({ task, onComplete, onArchive, compact = false }: TaskCardProps) => {
+const TaskCard = ({ task, onComplete, onArchive, compact = false, draggable = false }: TaskCardProps) => {
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData("taskId", task.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
   return (
-    <Card className={cn("transition-shadow hover:shadow-md", compact && "shadow-sm")}>
+    <Card 
+      draggable={draggable}
+      onDragStart={handleDragStart}
+      className={cn(
+        "transition-shadow hover:shadow-md", 
+        compact && "shadow-sm",
+        draggable && "cursor-grab active:cursor-grabbing"
+      )}
+    >
       <CardContent className={cn("p-4", compact && "p-3")}>
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 space-y-2">

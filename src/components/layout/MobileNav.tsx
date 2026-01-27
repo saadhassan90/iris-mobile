@@ -17,8 +17,8 @@ interface MobileNavProps {
 }
 
 const navItems = [
-  { label: "Voice Chat", icon: Mic, path: "/" },
-  { label: "Dashboard", icon: LayoutDashboard, path: "/dashboard" },
+  { label: "Talk to Iris", icon: Mic, path: "/" },
+  { label: "Agenda", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
 
