@@ -1,10 +1,10 @@
 import { useState } from "react";
-import AppLayout, { useConversationContext } from "@/components/layout/AppLayout";
+import { useConversationContext } from "@/components/layout/AppLayout";
 import VoiceOrb, { VoiceState } from "@/components/voice/VoiceOrb";
 import ChatThread from "@/components/chat/ChatThread";
 import MessageInput from "@/components/chat/MessageInput";
 
-const VoiceChatContent = () => {
+const VoiceChat = () => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
   const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -129,14 +129,6 @@ const VoiceChatContent = () => {
         disabled={isLoading}
       />
     </div>
-  );
-};
-
-const VoiceChat = () => {
-  return (
-    <AppLayout title="Voice Chat">
-      <VoiceChatContent />
-    </AppLayout>
   );
 };
 
