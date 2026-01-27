@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Mic, MicOff } from "lucide-react";
+import { Send, Mic, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
@@ -9,6 +9,7 @@ interface MessageInputProps {
   onVoiceStart?: () => void;
   onVoiceStop?: () => void;
   isListening?: boolean;
+  isConnecting?: boolean;
   disabled?: boolean;
 }
 
@@ -17,6 +18,7 @@ const MessageInput = ({
   onVoiceStart,
   onVoiceStop,
   isListening = false,
+  isConnecting = false,
   disabled = false,
 }: MessageInputProps) => {
   const [textInput, setTextInput] = useState("");
@@ -63,7 +65,7 @@ const MessageInput = ({
           value={textInput}
           onChange={(e) => setTextInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          disabled={disabled || isListening}
+          disabled={disabled || isListening || isConnecting}
           className="min-h-[44px] max-h-[120px] resize-none rounded-2xl py-3"
           rows={1}
         />
@@ -71,16 +73,16 @@ const MessageInput = ({
         {/* Voice button */}
         <Button
           size="icon"
-          variant={isListening ? "destructive" : "secondary"}
+          variant={isConnecting ? "secondary" : "secondary"}
           className={cn(
             "h-11 w-11 shrink-0 rounded-full transition-all",
-            isListening && "animate-pulse"
+            isConnecting && "animate-pulse"
           )}
           onClick={handleMicClick}
-          disabled={disabled}
+          disabled={disabled || isConnecting}
         >
-          {isListening ? (
-            <MicOff className="h-4 w-4" />
+          {isConnecting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <Mic className="h-4 w-4" />
           )}
@@ -91,7 +93,7 @@ const MessageInput = ({
           size="icon"
           className="h-11 w-11 shrink-0 rounded-full"
           onClick={handleSend}
-          disabled={!textInput.trim() || disabled || isListening}
+          disabled={!textInput.trim() || disabled || isListening || isConnecting}
         >
           <Send className="h-4 w-4" />
         </Button>
