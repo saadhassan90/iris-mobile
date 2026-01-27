@@ -61,7 +61,7 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
         ref={scrollRef}
         onScrollCapture={handleScroll}
       >
-        <div className="flex flex-col gap-3 p-4 pb-2">
+        <div className="flex flex-col gap-3 p-4 pb-24">
           {messages.map((message) => (
             <MessageBubble
               key={message.id}
