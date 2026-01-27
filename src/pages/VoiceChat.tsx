@@ -95,11 +95,10 @@ const VoiceChat = () => {
         onSuggestionClick={handleSuggestionClick}
       />
 
-      {/* Text-only message input (voice disabled) */}
+      {/* Text-only message input */}
       <MessageInput
         onSendMessage={handleSendMessage}
         disabled={isLoading}
-        hideVoiceButton={true}
         placeholder="Ask Iris"
       />
     </div>
