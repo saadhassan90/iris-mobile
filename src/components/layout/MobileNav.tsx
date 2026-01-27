@@ -71,18 +71,9 @@ const MobileNav = ({
           </Button>
         </SheetHeader>
         
-        <div className="flex flex-col py-4">
-          {/* Conversation History Section */}
-          <ConversationSidebar
-            conversations={conversations}
-            activeConversationId={activeConversationId}
-            onSelectConversation={handleSelectConversation}
-            onNewConversation={handleNewConversation}
-            onDeleteConversation={(id) => onDeleteConversation?.(id)}
-          />
-
-          {/* Navigation Items */}
-          <nav className="flex flex-col gap-2 px-4">
+        <div className="flex flex-col py-2">
+          {/* Navigation Items - Top Section */}
+          <nav className="flex flex-col gap-1 px-3 pb-3">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -90,19 +81,28 @@ const MobileNav = ({
                   key={item.path}
                   onClick={() => handleNavigate(item.path)}
                   className={cn(
-                    "flex items-center gap-3 rounded-full px-4 py-3 text-left transition-colors",
+                    "flex items-center gap-2 rounded-full px-3 py-2 text-left text-sm transition-colors",
                     "hover:bg-accent",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-foreground"
                   )}
                 >
-                  <item.icon className="h-5 w-5" />
+                  <item.icon className="h-4 w-4" />
                   <span className="font-medium">{item.label}</span>
                 </button>
               );
             })}
           </nav>
+
+          {/* Conversation History Section - Bottom */}
+          <ConversationSidebar
+            conversations={conversations}
+            activeConversationId={activeConversationId}
+            onSelectConversation={handleSelectConversation}
+            onNewConversation={handleNewConversation}
+            onDeleteConversation={(id) => onDeleteConversation?.(id)}
+          />
         </div>
       </SheetContent>
     </Sheet>
