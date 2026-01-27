@@ -11,6 +11,7 @@ interface KanbanColumnProps {
 }
 
 const columnColors: Record<TaskStatus, string> = {
+  uncategorized: "border-orange-500/50",
   todo: "border-muted-foreground/30",
   in_progress: "border-primary/50",
   done: "border-green-500/50",
@@ -26,6 +27,7 @@ const KanbanColumn = ({
   const filteredTasks = tasks.filter((task) => task.status === status);
   
   const getNextStatus = (current: TaskStatus): TaskStatus | null => {
+    if (current === "uncategorized") return "todo";
     if (current === "todo") return "in_progress";
     if (current === "in_progress") return "done";
     return null;

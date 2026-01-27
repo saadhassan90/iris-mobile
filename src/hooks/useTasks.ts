@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 
-export type TaskStatus = "todo" | "in_progress" | "done";
+export type TaskStatus = "uncategorized" | "todo" | "in_progress" | "done";
+
+export type TaskSource = "voice" | "manual" | "email" | "fireflies" | "other";
 
 export interface Task {
   id: string;
   title: string;
   status: TaskStatus;
-  source: string;
+  source: TaskSource;
   createdAt: Date;
   dueDate?: Date;
 }
@@ -45,11 +47,11 @@ export const useTasks = () => {
     saveTasks(tasks);
   }, [tasks]);
 
-  const addTask = (title: string, source: string = "voice") => {
+  const addTask = (title: string, source: TaskSource = "voice") => {
     const newTask: Task = {
       id: crypto.randomUUID(),
       title,
-      status: "todo",
+      status: source === "manual" ? "todo" : "uncategorized",
       source,
       createdAt: new Date(),
     };
