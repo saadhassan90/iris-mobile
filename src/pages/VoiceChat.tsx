@@ -1,12 +1,11 @@
 import { useConversationContext } from "@/components/layout/AppLayout";
-import ChatThread from "@/components/chat/ChatThread";
-import MessageInput from "@/components/chat/MessageInput";
 import VoiceOrb, { VoiceState } from "@/components/voice/VoiceOrb";
 import { useIrisVoice } from "@/hooks/useIrisVoice";
-import { supabase } from "@/integrations/supabase/client";
 import { useRef, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Phone, PhoneOff } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   role: "user" | "assistant";
@@ -16,13 +15,11 @@ interface Message {
 const VoiceChat = () => {
   const {
     messages,
-    isLoading,
-    setIsLoading,
     addMessage,
     updateMessageStatus,
   } = useConversationContext();
 
-  // Keep conversation history for text mode
+  // Keep conversation history for backend sync
   const conversationHistoryRef = useRef<Message[]>([]);
 
   // Voice callbacks
@@ -60,124 +57,96 @@ const VoiceChat = () => {
     return "idle";
   }, [connectionState, isSpeaking]);
 
-  const isVoiceActive = connectionState !== "disconnected";
+  const isConnected = connectionState === "connected";
+  const isConnecting = connectionState === "connecting";
+  const isDisconnected = connectionState === "disconnected";
 
-  // Handle text message send
-  const handleSendMessage = async (content: string) => {
-    const userMessage = addMessage(content, 'user');
-    
-    setTimeout(() => {
-      updateMessageStatus(userMessage.id, 'delivered');
-    }, 300);
-
-    conversationHistoryRef.current.push({ role: "user", content });
-
-    setIsLoading(true);
-
-    try {
-      const { data, error } = await supabase.functions.invoke("clawdbot-chat", {
-        body: {
-          message: content,
-          conversationHistory: conversationHistoryRef.current.slice(0, -1),
-        },
-      });
-
-      updateMessageStatus(userMessage.id, 'transferred');
-
-      if (error) {
-        throw new Error(error.message || "Failed to get response");
-      }
-
-      const responseText = data?.response || "I couldn't process that request.";
-      
-      conversationHistoryRef.current.push({ role: "assistant", content: responseText });
-      addMessage(responseText, 'assistant');
-
-    } catch (error) {
-      console.error("Chat error:", error);
-      addMessage(
-        "Sorry, I encountered an error. Please try again.",
-        'assistant'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRetry = (messageId: string) => {
-    const message = messages.find(m => m.id === messageId);
-    if (message) {
-      updateMessageStatus(messageId, 'sending');
-      setTimeout(() => {
-        updateMessageStatus(messageId, 'delivered');
-        setTimeout(() => {
-          updateMessageStatus(messageId, 'transferred');
-        }, 500);
-      }, 500);
-    }
-  };
-
-  const handleSuggestionClick = (suggestion: string) => {
-    handleSendMessage(suggestion);
-  };
-
-  const handleVoiceToggle = () => {
-    if (isVoiceActive) {
-      endCall();
-    } else {
-      startCall();
-    }
-  };
+  // Get status text
+  const statusText = useMemo(() => {
+    if (isConnecting) return "Connecting...";
+    if (isConnected && isSpeaking) return "Iris is speaking...";
+    if (isConnected) return "Listening...";
+    return "Tap to talk with Iris";
+  }, [isConnecting, isConnected, isSpeaking]);
 
   return (
     <div className="flex flex-1 flex-col h-full min-h-0">
-      {/* Voice mode overlay */}
-      {isVoiceActive && (
-        <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-background/95 backdrop-blur-sm">
-          {/* Voice orb */}
-          <VoiceOrb
-            state={voiceState}
-            inputVolume={inputVolume}
-            outputVolume={outputVolume}
-            className="mb-8"
-          />
-          
-          {/* Status text */}
-          <p className="mb-8 text-lg text-muted-foreground">
-            {connectionState === "connecting" && "Connecting..."}
-            {connectionState === "connected" && isSpeaking && "Iris is speaking..."}
-            {connectionState === "connected" && !isSpeaking && "Listening..."}
-          </p>
+      {/* Main voice interface */}
+      <div className="flex flex-1 flex-col items-center justify-center p-6">
+        {/* Voice orb */}
+        <VoiceOrb
+          state={voiceState}
+          inputVolume={inputVolume}
+          outputVolume={outputVolume}
+          className="mb-6"
+        />
 
-          {/* End call button */}
+        {/* Status text */}
+        <p className="mb-8 text-center text-lg text-muted-foreground">
+          {statusText}
+        </p>
+
+        {/* Push to talk / End call button */}
+        {isDisconnected ? (
+          <Button
+            size="lg"
+            className={cn(
+              "h-20 w-20 rounded-full transition-all duration-200",
+              "bg-primary hover:bg-primary/90 hover:scale-105",
+              "shadow-lg hover:shadow-xl"
+            )}
+            onClick={startCall}
+            disabled={isConnecting}
+          >
+            <Phone className="h-8 w-8" />
+          </Button>
+        ) : (
           <Button
             variant="destructive"
             size="lg"
-            className="h-14 w-14 rounded-full"
+            className={cn(
+              "h-20 w-20 rounded-full transition-all duration-200",
+              "hover:scale-105 shadow-lg hover:shadow-xl"
+            )}
             onClick={endCall}
           >
-            <PhoneOff className="h-6 w-6" />
+            <PhoneOff className="h-8 w-8" />
           </Button>
+        )}
+
+        {/* Connection state indicator */}
+        {isConnecting && (
+          <p className="mt-4 text-sm text-muted-foreground animate-pulse">
+            Requesting microphone access...
+          </p>
+        )}
+      </div>
+
+      {/* Transcript history - compact at bottom */}
+      {messages.length > 0 && (
+        <div className="border-t border-border bg-muted/30">
+          <ScrollArea className="h-32 px-4 py-2">
+            <div className="space-y-2">
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={cn(
+                    "text-sm",
+                    message.role === "user"
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  <span className="font-medium">
+                    {message.role === "user" ? "You: " : "Iris: "}
+                  </span>
+                  {message.content}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         </div>
       )}
-
-      {/* Chat thread - scrollable */}
-      <ChatThread
-        messages={messages}
-        isLoading={isLoading}
-        onRetry={handleRetry}
-        onSuggestionClick={handleSuggestionClick}
-      />
-
-      {/* Message input with voice button */}
-      <MessageInput
-        onSendMessage={handleSendMessage}
-        disabled={isLoading}
-        placeholder="Ask Iris"
-        onVoiceClick={handleVoiceToggle}
-        isVoiceActive={isVoiceActive}
-        voiceConnecting={connectionState === "connecting"}
-      />
     </div>
   );
 };
