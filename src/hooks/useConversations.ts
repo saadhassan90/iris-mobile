@@ -84,13 +84,12 @@ export const useConversations = () => {
     setConversations(convs);
   }, []);
 
-  // Save messages to localStorage
+  // Save messages to localStorage and update state
   const saveMessages = useCallback((conversationId: string, msgs: Message[]) => {
     localStorage.setItem(`${MESSAGES_KEY_PREFIX}${conversationId}`, JSON.stringify(msgs));
-    if (conversationId === activeConversationId) {
-      setMessages(msgs);
-    }
-  }, [activeConversationId]);
+    // Always update the messages state - the conversationId passed is the one we're working with
+    setMessages(msgs);
+  }, []);
 
   // Create a new conversation
   const createConversation = useCallback(() => {
@@ -103,7 +102,7 @@ export const useConversations = () => {
     const updated = [newConv, ...conversations];
     saveConversations(updated);
     setActiveConversationId(newConv.id);
-    setMessages([]);
+    // Don't reset messages here - let addMessage handle it
     return newConv;
   }, [conversations, saveConversations]);
 
@@ -192,11 +191,24 @@ export const useConversations = () => {
   const updateMessageStatus = useCallback((messageId: string, status: MessageStatus) => {
     if (!activeConversationId) return;
 
-    const updatedMessages = messages.map(msg =>
-      msg.id === messageId ? { ...msg, status } : msg
-    );
-    saveMessages(activeConversationId, updatedMessages);
-  }, [activeConversationId, messages, saveMessages]);
+    // Read latest messages from localStorage to avoid stale state
+    const stored = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${activeConversationId}`);
+    if (!stored) return;
+    
+    try {
+      const currentMessages = JSON.parse(stored).map((msg: Message) => ({
+        ...msg,
+        createdAt: parseDate(msg.createdAt as unknown as string),
+      }));
+      
+      const updatedMessages = currentMessages.map((msg: Message) =>
+        msg.id === messageId ? { ...msg, status } : msg
+      );
+      saveMessages(activeConversationId, updatedMessages);
+    } catch (e) {
+      console.error('Failed to update message status:', e);
+    }
+  }, [activeConversationId, saveMessages]);
 
   // Get active conversation
   const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
