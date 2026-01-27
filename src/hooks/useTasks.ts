@@ -11,6 +11,7 @@ export interface Task {
   source: TaskSource;
   createdAt: Date;
   dueDate?: Date;
+  archived?: boolean;
 }
 
 const STORAGE_KEY = "voice-agent-tasks";
@@ -73,11 +74,19 @@ export const useTasks = () => {
     updateTask(id, { status });
   };
 
+  const archiveTask = (id: string) => {
+    updateTask(id, { archived: true });
+  };
+
+  // Filter out archived tasks for the UI
+  const activeTasks = tasks.filter((task) => !task.archived);
+
   return {
-    tasks,
+    tasks: activeTasks,
     addTask,
     updateTask,
     deleteTask,
     moveTask,
+    archiveTask,
   };
 };

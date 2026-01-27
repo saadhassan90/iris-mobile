@@ -7,7 +7,7 @@ interface KanbanColumnProps {
   status: TaskStatus;
   tasks: Task[];
   onMoveTask: (id: string, status: TaskStatus) => void;
-  onDeleteTask: (id: string) => void;
+  onArchiveTask: (id: string) => void;
 }
 
 const columnColors: Record<TaskStatus, string> = {
@@ -22,7 +22,7 @@ const KanbanColumn = ({
   status,
   tasks,
   onMoveTask,
-  onDeleteTask,
+  onArchiveTask,
 }: KanbanColumnProps) => {
   const filteredTasks = tasks.filter((task) => task.status === status);
   
@@ -63,7 +63,7 @@ const KanbanColumn = ({
                   ? () => onMoveTask(task.id, getNextStatus(status)!)
                   : undefined
               }
-              onDelete={() => onDeleteTask(task.id)}
+              onArchive={() => onArchiveTask(task.id)}
             />
           ))
         )}

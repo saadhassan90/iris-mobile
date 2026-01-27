@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Check, Trash2, Mic, Keyboard, Mail, Headphones, HelpCircle } from "lucide-react";
+import { Check, Archive, Mic, Keyboard, Mail, Headphones, HelpCircle } from "lucide-react";
 import { Task, TaskStatus, TaskSource } from "@/hooks/useTasks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 interface TaskCardProps {
   task: Task;
   onComplete?: () => void;
-  onDelete?: () => void;
+  onArchive?: () => void;
   compact?: boolean;
 }
 
@@ -43,7 +43,7 @@ const sourceLabels: Record<TaskSource, string> = {
   other: "Other",
 };
 
-const TaskCard = ({ task, onComplete, onDelete, compact = false }: TaskCardProps) => {
+const TaskCard = ({ task, onComplete, onArchive, compact = false }: TaskCardProps) => {
   return (
     <Card className={cn("transition-shadow hover:shadow-md", compact && "shadow-sm")}>
       <CardContent className={cn("p-4", compact && "p-3")}>
@@ -72,30 +72,28 @@ const TaskCard = ({ task, onComplete, onDelete, compact = false }: TaskCardProps
             </p>
           </div>
           
-          {task.status !== "done" && (
-            <div className="flex gap-1">
-              {onComplete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full text-green-600 hover:bg-green-100 hover:text-green-700"
-                  onClick={onComplete}
-                >
-                  <Check className="h-4 w-4" />
-                </Button>
-              )}
-              {onDelete && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full text-destructive hover:bg-destructive/10"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          )}
+          <div className="flex gap-1">
+            {task.status !== "done" && onComplete && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full text-green-600 hover:bg-green-100 hover:text-green-700"
+                onClick={onComplete}
+              >
+                <Check className="h-4 w-4" />
+              </Button>
+            )}
+            {onArchive && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-full text-muted-foreground hover:bg-muted"
+                onClick={onArchive}
+              >
+                <Archive className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>
