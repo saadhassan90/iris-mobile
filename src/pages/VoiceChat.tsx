@@ -6,7 +6,6 @@ import MessageInput from "@/components/chat/MessageInput";
 
 const VoiceChat = () => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
-  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
 
   const {
@@ -101,8 +100,8 @@ const VoiceChat = () => {
 
   return (
     <div className="flex flex-1 flex-col">
-      {/* Voice orb section - only visible in voice mode when active */}
-      {isVoiceMode && voiceState !== "idle" && (
+      {/* Voice orb section - visible when actively listening/processing */}
+      {voiceState !== "idle" && (
         <div className="flex flex-col items-center justify-center py-6 border-b">
           <VoiceOrb state={voiceState} />
           <p className="mt-4 text-sm font-medium text-muted-foreground">
@@ -118,13 +117,11 @@ const VoiceChat = () => {
         onRetry={handleRetry}
       />
 
-      {/* Message input */}
+      {/* Message input with integrated voice button */}
       <MessageInput
         onSendMessage={handleSendMessage}
         onVoiceStart={handleVoiceStart}
         onVoiceStop={handleVoiceStop}
-        isVoiceMode={isVoiceMode}
-        onVoiceModeChange={setIsVoiceMode}
         isListening={isListening}
         disabled={isLoading}
       />
