@@ -45,7 +45,7 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
 
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center px-4">
+      <div className="flex flex-1 min-h-0 flex-col items-center justify-center px-4">
         <h1 className="text-2xl font-semibold text-foreground mb-8">
           What can I help with?
         </h1>
@@ -55,7 +55,7 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
   }
 
   return (
-    <div className="relative flex-1 overflow-hidden">
+    <div className="relative flex-1 min-h-0 overflow-hidden">
       <ScrollArea 
         className="h-full"
         ref={scrollRef}

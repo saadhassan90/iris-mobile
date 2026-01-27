@@ -86,8 +86,8 @@ const VoiceChat = () => {
   };
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden">
-      {/* Chat thread */}
+    <div className="flex flex-1 flex-col h-full min-h-0">
+      {/* Chat thread - scrollable */}
       <ChatThread
         messages={messages}
         isLoading={isLoading}
