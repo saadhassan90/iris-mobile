@@ -64,58 +64,60 @@ const Dashboard = () => {
         </div>
 
         {/* Task views */}
-        {view === "list" ? (
-          <div className="flex flex-col gap-3">
-            {tasks.length === 0 ? (
-              <p className="py-12 text-center text-muted-foreground">
-                No tasks yet. Add one above or use voice commands!
-              </p>
-            ) : (
-              tasks.map((task) => (
-                <TaskCard
-                  key={task.id}
-                  task={task}
-                  onComplete={
-                    task.status !== "done"
-                      ? () => moveTask(task.id, task.status === "todo" ? "in_progress" : "done")
-                      : undefined
-                  }
-                  onDelete={() => deleteTask(task.id)}
+        <div className="min-h-[200px]">
+          {view === "list" ? (
+            <div className="flex flex-col gap-3">
+              {tasks.length === 0 ? (
+                <p className="py-12 text-center text-muted-foreground">
+                  No tasks yet. Add one above or use voice commands!
+                </p>
+              ) : (
+                tasks.map((task) => (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    onComplete={
+                      task.status !== "done"
+                        ? () => moveTask(task.id, task.status === "todo" ? "in_progress" : "done")
+                        : undefined
+                    }
+                    onDelete={() => deleteTask(task.id)}
+                  />
+                ))
+              )}
+            </div>
+          ) : (
+            <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory">
+              <div className="snap-center shrink-0">
+                <KanbanColumn
+                  title="To Do"
+                  status="todo"
+                  tasks={tasks}
+                  onMoveTask={moveTask}
+                  onDeleteTask={deleteTask}
                 />
-              ))
-            )}
-          </div>
-        ) : (
-          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory">
-            <div className="snap-center">
-              <KanbanColumn
-                title="To Do"
-                status="todo"
-                tasks={tasks}
-                onMoveTask={moveTask}
-                onDeleteTask={deleteTask}
-              />
+              </div>
+              <div className="snap-center shrink-0">
+                <KanbanColumn
+                  title="In Progress"
+                  status="in_progress"
+                  tasks={tasks}
+                  onMoveTask={moveTask}
+                  onDeleteTask={deleteTask}
+                />
+              </div>
+              <div className="snap-center shrink-0">
+                <KanbanColumn
+                  title="Done"
+                  status="done"
+                  tasks={tasks}
+                  onMoveTask={moveTask}
+                  onDeleteTask={deleteTask}
+                />
+              </div>
             </div>
-            <div className="snap-center">
-              <KanbanColumn
-                title="In Progress"
-                status="in_progress"
-                tasks={tasks}
-                onMoveTask={moveTask}
-                onDeleteTask={deleteTask}
-              />
-            </div>
-            <div className="snap-center">
-              <KanbanColumn
-                title="Done"
-                status="done"
-                tasks={tasks}
-                onMoveTask={moveTask}
-                onDeleteTask={deleteTask}
-              />
-            </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Email section */}
         <Collapsible open={emailsOpen} onOpenChange={setEmailsOpen}>

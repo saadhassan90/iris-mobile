@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mic, MicOff, Send, MessageSquare, Volume2 } from "lucide-react";
+import { Mic, MicOff, Send, MessageSquare } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import VoiceOrb, { VoiceState } from "@/components/voice/VoiceOrb";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ const VoiceChat = () => {
         {/* Voice mode toggle */}
         <div className="flex w-full items-center justify-end gap-2">
           <Label htmlFor="text-mode" className="text-sm text-muted-foreground">
-            <MessageSquare className="h-4 w-4" />
+            <Mic className="h-4 w-4" />
           </Label>
           <Switch
             id="text-mode"
@@ -74,7 +74,7 @@ const VoiceChat = () => {
             onCheckedChange={setIsTextMode}
           />
           <Label htmlFor="text-mode" className="text-sm text-muted-foreground">
-            <Volume2 className="h-4 w-4" />
+            <MessageSquare className="h-4 w-4" />
           </Label>
         </div>
 

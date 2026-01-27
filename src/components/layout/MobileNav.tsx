@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Mic, LayoutDashboard, Settings, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetClose } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
 interface MobileNavProps {
@@ -26,14 +26,17 @@ const MobileNav = ({ open, onOpenChange }: MobileNavProps) => {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-[280px] p-0">
+      <SheetContent side="left" className="w-[280px] p-0 [&>button]:hidden">
         <SheetHeader className="flex flex-row items-center justify-between border-b p-4">
           <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
-          <SheetClose asChild>
-            <Button variant="ghost" size="icon" className="h-8 w-8">
-              <X className="h-4 w-4" />
-            </Button>
-          </SheetClose>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-8 w-8"
+            onClick={() => onOpenChange(false)}
+          >
+            <X className="h-4 w-4" />
+          </Button>
         </SheetHeader>
         
         <nav className="flex flex-col gap-2 p-4">
