@@ -30,6 +30,24 @@ serve(async (req) => {
     if (CLAWDBOT_API_URL && CLAWDBOT_API_KEY) {
       console.log("Using clawdbot API");
       
+      // Build messages array in OpenAI format
+      const messages = [];
+      
+      // Add conversation history
+      if (Array.isArray(conversationHistory)) {
+        for (const msg of conversationHistory) {
+          if (msg.role && msg.content) {
+            messages.push({ role: msg.role, content: msg.content });
+          }
+        }
+      }
+      
+      // Add current message
+      messages.push({ role: "user", content: message });
+
+      // Generate a session ID for context continuity
+      const sessionId = `lovable-${Date.now()}`;
+      
       const response = await fetch(CLAWDBOT_API_URL, {
         method: "POST",
         headers: {
@@ -37,8 +55,10 @@ serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message,
-          conversationHistory,
+          model: "clawdbot:main",
+          messages,
+          stream: false,
+          user: sessionId,
         }),
       });
 
@@ -49,9 +69,10 @@ serve(async (req) => {
       }
 
       const data = await response.json();
+      const responseText = data.choices?.[0]?.message?.content || "I couldn't process that request.";
       
       return new Response(
-        JSON.stringify({ response: data.response || data.message || data.content }),
+        JSON.stringify({ response: responseText }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
