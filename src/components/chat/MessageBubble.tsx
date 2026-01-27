@@ -1,6 +1,7 @@
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import ReadReceipt from "./ReadReceipt";
+import MarkdownRenderer from "./MarkdownRenderer";
 import type { Message } from "@/hooks/useConversations";
 
 interface MessageBubbleProps {
@@ -24,18 +25,22 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
         isUser ? "justify-end" : "justify-start"
       )}
     >
-      <div className={cn("max-w-[80%] space-y-1", isUser && "items-end")}>
+      <div className={cn("max-w-[85%] space-y-1", isUser && "items-end")}>
         <div
           onClick={handleClick}
           className={cn(
             "rounded-2xl px-4 py-2.5 text-sm",
             isUser
               ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-muted text-foreground rounded-bl-md",
+              : "bg-muted rounded-bl-md",
             message.status === 'failed' && "cursor-pointer opacity-70"
           )}
         >
-          <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          {isUser ? (
+            <p className="whitespace-pre-wrap break-words">{message.content}</p>
+          ) : (
+            <MarkdownRenderer content={message.content} />
+          )}
         </div>
         
         <div className={cn(
