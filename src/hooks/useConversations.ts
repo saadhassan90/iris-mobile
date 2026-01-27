@@ -134,17 +134,6 @@ export const useConversations = () => {
       saveMessages(newConv.id, [message]);
       
       // Update conversation title and lastMessage
-      const updatedConvs = conversations.map(c => 
-        c.id === newConv.id 
-          ? { 
-              ...c, 
-              title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
-              lastMessage: content.slice(0, 50),
-              updatedAt: new Date() 
-            }
-          : c
-      );
-      // Since we just created the conversation, add the update
       const finalConvs = [{ 
         ...newConv, 
         title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
@@ -165,14 +154,28 @@ export const useConversations = () => {
       status: role === 'user' ? 'sending' : 'transferred',
     };
 
-    const updatedMessages = [...messages, message];
+    // Read latest messages from localStorage to avoid stale state
+    let currentMessages: Message[] = [];
+    const stored = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${activeConversationId}`);
+    if (stored) {
+      try {
+        currentMessages = JSON.parse(stored).map((msg: Message) => ({
+          ...msg,
+          createdAt: parseDate(msg.createdAt as unknown as string),
+        }));
+      } catch (e) {
+        console.error('Failed to parse messages:', e);
+      }
+    }
+
+    const updatedMessages = [...currentMessages, message];
     saveMessages(activeConversationId, updatedMessages);
 
     // Update conversation title (first user message) and lastMessage
     const updatedConvs = conversations.map(c => {
       if (c.id !== activeConversationId) return c;
       
-      const isFirstMessage = messages.length === 0 && role === 'user';
+      const isFirstMessage = currentMessages.length === 0 && role === 'user';
       return {
         ...c,
         title: isFirstMessage ? content.slice(0, 30) + (content.length > 30 ? '...' : '') : c.title,
@@ -183,7 +186,7 @@ export const useConversations = () => {
     saveConversations(updatedConvs);
 
     return message;
-  }, [activeConversationId, messages, conversations, createConversation, saveMessages, saveConversations]);
+  }, [activeConversationId, conversations, createConversation, saveMessages, saveConversations]);
 
   // Update message status
   const updateMessageStatus = useCallback((messageId: string, status: MessageStatus) => {
