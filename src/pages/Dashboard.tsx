@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { Plus, Mail, ChevronDown, ChevronUp } from "lucide-react";
-import AppLayout from "@/components/layout/AppLayout";
 import ViewToggle from "@/components/dashboard/ViewToggle";
 import TaskCard from "@/components/dashboard/TaskCard";
 import KanbanColumn from "@/components/dashboard/KanbanColumn";
@@ -37,8 +36,7 @@ const Dashboard = () => {
   };
 
   return (
-    <AppLayout title="Dashboard">
-      <div className="flex flex-1 flex-col gap-4 p-4">
+    <div className="flex flex-1 flex-col gap-4 p-4">
         {/* Add task input */}
         <div className="flex gap-2">
           <Input
@@ -163,8 +161,7 @@ const Dashboard = () => {
             </CollapsibleContent>
           </Card>
         </Collapsible>
-      </div>
-    </AppLayout>
+    </div>
   );
 };
 
