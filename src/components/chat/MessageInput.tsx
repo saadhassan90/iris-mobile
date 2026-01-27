@@ -50,7 +50,7 @@ const MessageInput = ({
   };
 
   return (
-    <div className="shrink-0 bg-background px-4 pb-6 pt-2">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background px-4 pb-6 pt-2">
       <div className="flex items-center justify-center gap-3 mx-auto max-w-2xl">
         {/* Plus/Attach button */}
         <Button
