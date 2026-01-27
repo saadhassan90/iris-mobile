@@ -17,6 +17,7 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
   const [outputVolume, setOutputVolume] = useState(0);
   const animationFrameRef = useRef<number | null>(null);
   const optionsRef = useRef(options);
+  const micStreamRef = useRef<MediaStream | null>(null);
   
   // Keep options ref updated
   useEffect(() => {
@@ -31,6 +32,13 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
     onDisconnect: () => {
       console.log("Disconnected from Iris");
       setConnectionState("disconnected");
+
+      // Ensure mic is released if the SDK disconnects unexpectedly.
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+      }
+
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;
@@ -39,15 +47,46 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       setOutputVolume(0);
     },
     onMessage: (payload) => {
+      // The SDK can emit different payload shapes depending on connection type/version.
+      // Handle both the legacy { role, message } shape and the event-based { type, ... } shape.
       console.log("Message from Iris:", payload);
-      
-      // The payload has { message, role, source } structure
-      if (payload.role === "user" && optionsRef.current.onUserTranscript) {
-        optionsRef.current.onUserTranscript(payload.message);
-      }
-      
-      if (payload.role === "agent" && optionsRef.current.onAgentResponse) {
-        optionsRef.current.onAgentResponse(payload.message);
+
+      try {
+        // Event-based payloads
+        if ((payload as any)?.type === "user_transcript") {
+          const transcript = (payload as any)?.user_transcription_event?.user_transcript;
+          if (typeof transcript === "string" && transcript.trim()) {
+            optionsRef.current.onUserTranscript?.(transcript);
+          }
+          return;
+        }
+
+        if ((payload as any)?.type === "agent_response") {
+          const response = (payload as any)?.agent_response_event?.agent_response;
+          if (typeof response === "string" && response.trim()) {
+            optionsRef.current.onAgentResponse?.(response);
+          }
+          return;
+        }
+
+        // Legacy payload shape
+        if ((payload as any)?.role === "user") {
+          const msg = (payload as any)?.message;
+          if (typeof msg === "string" && msg.trim()) {
+            optionsRef.current.onUserTranscript?.(msg);
+          }
+          return;
+        }
+
+        if ((payload as any)?.role === "agent") {
+          const msg = (payload as any)?.message;
+          if (typeof msg === "string" && msg.trim()) {
+            optionsRef.current.onAgentResponse?.(msg);
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn("Failed to parse ElevenLabs message payload", e);
       }
     },
     onError: (message, context) => {
@@ -86,7 +125,13 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
 
     try {
       // Request microphone permission
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      micStreamRef.current = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
 
       // Get signed URL from edge function
       const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
@@ -102,11 +147,17 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       // Start the conversation with WebSocket (more stable than WebRTC)
       await conversation.startSession({
         signedUrl: data.signedUrl,
-      });
+        connectionType: "websocket",
+      } as any);
 
     } catch (error: any) {
       console.error("Failed to start call:", error);
       setConnectionState("disconnected");
+
+      if (micStreamRef.current) {
+        micStreamRef.current.getTracks().forEach((t) => t.stop());
+        micStreamRef.current = null;
+      }
 
       if (error.name === "NotAllowedError" || error.message?.includes("permission")) {
         toast({
@@ -130,6 +181,12 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
     } catch (error) {
       console.error("Failed to end call:", error);
     }
+
+    if (micStreamRef.current) {
+      micStreamRef.current.getTracks().forEach((t) => t.stop());
+      micStreamRef.current = null;
+    }
+
     setConnectionState("disconnected");
   }, [conversation]);
 
