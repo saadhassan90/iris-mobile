@@ -44,12 +44,15 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       }
     },
     onMessage: (message) => {
-      // MessagePayload has: message (string), role ("user" | "agent"), source ("user" | "ai")
-      console.log("ElevenLabs message:", message);
+      // Log all messages for debugging
+      console.log("ElevenLabs message:", JSON.stringify(message, null, 2));
       
-      if (message.role === "user") {
+      // Handle different message formats from ElevenLabs
+      if (message.role === "user" && message.message) {
+        console.log("User transcript received:", message.message);
         optionsRef.current.onUserTranscript?.(message.message);
-      } else if (message.role === "agent") {
+      } else if (message.role === "agent" && message.message) {
+        console.log("Agent response received:", message.message);
         optionsRef.current.onAgentResponse?.(message.message);
       }
     },
@@ -77,6 +80,11 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
           const output = conversation.getOutputVolume?.() ?? 0;
           setInputVolume(input);
           setOutputVolume(output);
+          
+          // Debug: Log when there's significant input volume
+          if (input > 0.1) {
+            console.log("Microphone input detected:", input);
+          }
         } catch {
           // Ignore errors from volume methods
         }
@@ -98,9 +106,15 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
 
     try {
       // Request microphone permission first
-      await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Requesting microphone access...");
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log("Microphone access granted, tracks:", stream.getAudioTracks().length);
+      
+      // Stop the test stream - ElevenLabs SDK will create its own
+      stream.getTracks().forEach(track => track.stop());
 
       // Get signed URL from edge function
+      console.log("Fetching signed URL...");
       const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
 
       if (error) {
@@ -111,10 +125,14 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
         throw new Error("No signed URL received from server");
       }
 
+      console.log("Starting ElevenLabs session...");
+      
       // Start the conversation with the signed URL
       await conversation.startSession({
         signedUrl: data.signedUrl,
       });
+
+      console.log("Session started successfully");
 
     } catch (error: any) {
       console.error("Failed to start call:", error);
