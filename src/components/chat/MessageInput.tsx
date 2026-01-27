@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, Mic, AudioLines, X, FileText, Image, Film, Music } from "lucide-react";
+import { Plus, ArrowUp, X, FileText, Image, Film, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -12,12 +12,7 @@ interface AttachedFile {
 
 interface MessageInputProps {
   onSendMessage: (content: string, files?: File[]) => void;
-  onVoiceStart?: () => void;
-  onVoiceStop?: () => void;
-  isListening?: boolean;
-  isConnecting?: boolean;
   disabled?: boolean;
-  hideVoiceButton?: boolean;
   placeholder?: string;
 }
 
@@ -30,18 +25,15 @@ const getFileIcon = (type: string) => {
 
 const MessageInput = ({
   onSendMessage,
-  onVoiceStart,
-  onVoiceStop,
-  isListening = false,
-  isConnecting = false,
   disabled = false,
-  hideVoiceButton = false,
   placeholder = "Ask ChatGPT",
 }: MessageInputProps) => {
   const [textInput, setTextInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const hasContent = textInput.trim().length > 0 || attachedFiles.length > 0;
 
   const handleSend = () => {
     if ((!textInput.trim() && attachedFiles.length === 0) || disabled) return;
@@ -60,13 +52,6 @@ const MessageInput = ({
     }
   };
 
-  const handleMicClick = () => {
-    if (isListening) {
-      onVoiceStop?.();
-    } else {
-      onVoiceStart?.();
-    }
-  };
 
   const handlePlusClick = () => {
     fileInputRef.current?.click();
@@ -177,40 +162,31 @@ const MessageInput = ({
 
           {/* Input field */}
           <div className="relative flex-1">
-            <Input
+          <Input
               ref={inputRef}
               type="text"
               placeholder={placeholder}
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={disabled || isListening || isConnecting}
-              className="h-12 rounded-full border-border bg-muted/50 pl-4 pr-20 text-base placeholder:text-muted-foreground"
+              disabled={disabled}
+              className="h-12 rounded-full border-border bg-muted/50 pl-4 pr-14 text-base placeholder:text-muted-foreground"
             />
 
-            {/* Icons inside input */}
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-              {/* Microphone button */}
-              {!hideVoiceButton && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 rounded-full text-muted-foreground hover:text-foreground"
-                  onClick={handleMicClick}
-                  disabled={disabled || isConnecting}
-                >
-                  <Mic className="h-5 w-5" />
-                </Button>
-              )}
-
-              {/* Audio/Voice button */}
+            {/* Send button inside input */}
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
               <Button
                 size="icon"
-                className="h-8 w-8 rounded-full bg-foreground text-background hover:bg-foreground/90"
-                onClick={textInput.trim() || attachedFiles.length > 0 ? handleSend : handleMicClick}
-                disabled={disabled || isConnecting}
+                className={cn(
+                  "h-8 w-8 rounded-full transition-opacity",
+                  hasContent
+                    ? "bg-foreground text-background hover:bg-foreground/90"
+                    : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
+                )}
+                onClick={handleSend}
+                disabled={disabled || !hasContent}
               >
-                <AudioLines className="h-4 w-4" />
+                <ArrowUp className="h-4 w-4" />
               </Button>
             </div>
           </div>
