@@ -34,9 +34,9 @@ serve(async (req) => {
       );
     }
 
-    // Get conversation token from ElevenLabs
+    // Get signed URL from ElevenLabs (more stable than WebRTC token)
     const response = await fetch(
-      `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${AGENT_ID}`,
+      `https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${AGENT_ID}`,
       {
         method: "GET",
         headers: {
@@ -57,7 +57,7 @@ serve(async (req) => {
     const data = await response.json();
 
     return new Response(
-      JSON.stringify({ token: data.token }),
+      JSON.stringify({ signedUrl: data.signed_url }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
