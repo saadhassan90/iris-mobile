@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Plus, ArrowUp, X, FileText, Image, Film, Music } from "lucide-react";
+import { Plus, ArrowUp, X, FileText, Image, Film, Music, Mic, MicOff, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,9 @@ interface MessageInputProps {
   onSendMessage: (content: string, files?: File[]) => void;
   disabled?: boolean;
   placeholder?: string;
+  onVoiceClick?: () => void;
+  isVoiceActive?: boolean;
+  voiceConnecting?: boolean;
 }
 
 const getFileIcon = (type: string) => {
@@ -27,6 +30,9 @@ const MessageInput = ({
   onSendMessage,
   disabled = false,
   placeholder = "Ask ChatGPT",
+  onVoiceClick,
+  isVoiceActive = false,
+  voiceConnecting = false,
 }: MessageInputProps) => {
   const [textInput, setTextInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
@@ -190,6 +196,25 @@ const MessageInput = ({
               </Button>
             </div>
           </div>
+
+          {/* Microphone button */}
+          {onVoiceClick && (
+            <Button
+              variant={isVoiceActive ? "destructive" : "default"}
+              size="icon"
+              className="h-10 w-10 shrink-0 rounded-full"
+              onClick={onVoiceClick}
+              disabled={disabled || voiceConnecting}
+            >
+              {voiceConnecting ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : isVoiceActive ? (
+                <MicOff className="h-5 w-5" />
+              ) : (
+                <Mic className="h-5 w-5" />
+              )}
+            </Button>
+          )}
         </div>
       </div>
     </div>
