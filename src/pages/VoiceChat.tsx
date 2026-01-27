@@ -1,18 +1,90 @@
 import { useState } from "react";
-import { Mic, MicOff, Send, MessageSquare } from "lucide-react";
-import AppLayout from "@/components/layout/AppLayout";
+import AppLayout, { useConversationContext } from "@/components/layout/AppLayout";
 import VoiceOrb, { VoiceState } from "@/components/voice/VoiceOrb";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
-import { cn } from "@/lib/utils";
+import ChatThread from "@/components/chat/ChatThread";
+import MessageInput from "@/components/chat/MessageInput";
 
-const VoiceChat = () => {
+const VoiceChatContent = () => {
   const [voiceState, setVoiceState] = useState<VoiceState>("idle");
-  const [isTextMode, setIsTextMode] = useState(false);
-  const [textInput, setTextInput] = useState("");
+  const [isVoiceMode, setIsVoiceMode] = useState(false);
   const [isListening, setIsListening] = useState(false);
+
+  const {
+    messages,
+    isLoading,
+    setIsLoading,
+    addMessage,
+    updateMessageStatus,
+  } = useConversationContext();
+
+  const handleSendMessage = async (content: string) => {
+    // Add user message
+    const userMessage = addMessage(content, 'user');
+    
+    // Simulate API call - delivered status
+    setTimeout(() => {
+      updateMessageStatus(userMessage.id, 'delivered');
+    }, 500);
+
+    // Simulate transfer to AI agent
+    setTimeout(() => {
+      updateMessageStatus(userMessage.id, 'transferred');
+    }, 1000);
+
+    // Simulate AI response
+    setIsLoading(true);
+    setTimeout(() => {
+      setIsLoading(false);
+      addMessage(
+        "I've received your message! This is a simulated response. Once connected to the clawdbot AI backend, you'll get real responses here.",
+        'assistant'
+      );
+    }, 2500);
+  };
+
+  const handleVoiceStart = () => {
+    setIsListening(true);
+    setVoiceState("listening");
+    
+    // Simulate voice processing after 3 seconds
+    setTimeout(() => {
+      setVoiceState("processing");
+      setTimeout(() => {
+        // Simulate transcribed message
+        handleSendMessage("This is a simulated voice message transcription.");
+        setVoiceState("idle");
+        setIsListening(false);
+      }, 1500);
+    }, 3000);
+  };
+
+  const handleVoiceStop = () => {
+    setIsListening(false);
+    if (voiceState === "listening") {
+      setVoiceState("processing");
+      setTimeout(() => {
+        handleSendMessage("Voice message stopped early - transcription would go here.");
+        setVoiceState("idle");
+      }, 1000);
+    } else {
+      setVoiceState("idle");
+    }
+  };
+
+  const handleRetry = (messageId: string) => {
+    // Find the message and retry sending it
+    const message = messages.find(m => m.id === messageId);
+    if (message) {
+      updateMessageStatus(messageId, 'sending');
+      // Simulate retry
+      setTimeout(() => {
+        updateMessageStatus(messageId, 'delivered');
+        setTimeout(() => {
+          updateMessageStatus(messageId, 'transferred');
+        }, 500);
+      }, 500);
+    }
+  };
 
   const getStatusText = () => {
     switch (voiceState) {
@@ -23,113 +95,47 @@ const VoiceChat = () => {
       case "speaking":
         return "Speaking...";
       default:
-        return "Tap to speak";
+        return "";
     }
-  };
-
-  const handleMicClick = () => {
-    if (isListening) {
-      setIsListening(false);
-      setVoiceState("idle");
-    } else {
-      setIsListening(true);
-      setVoiceState("listening");
-      // Simulate processing after 3 seconds
-      setTimeout(() => {
-        setVoiceState("processing");
-        setTimeout(() => {
-          setVoiceState("speaking");
-          setTimeout(() => {
-            setVoiceState("idle");
-            setIsListening(false);
-          }, 2000);
-        }, 1500);
-      }, 3000);
-    }
-  };
-
-  const handleSendText = () => {
-    if (!textInput.trim()) return;
-    setVoiceState("processing");
-    setTextInput("");
-    setTimeout(() => {
-      setVoiceState("speaking");
-      setTimeout(() => {
-        setVoiceState("idle");
-      }, 2000);
-    }, 1500);
   };
 
   return (
-    <AppLayout title="Voice Chat">
-      <div className="flex flex-1 flex-col items-center justify-between px-4 pb-8 pt-4">
-        {/* Voice mode toggle */}
-        <div className="flex w-full items-center justify-end gap-2">
-          <Label htmlFor="text-mode" className="text-sm text-muted-foreground">
-            <Mic className="h-4 w-4" />
-          </Label>
-          <Switch
-            id="text-mode"
-            checked={isTextMode}
-            onCheckedChange={setIsTextMode}
-          />
-          <Label htmlFor="text-mode" className="text-sm text-muted-foreground">
-            <MessageSquare className="h-4 w-4" />
-          </Label>
-        </div>
-
-        {/* Voice orb area */}
-        <div className="flex flex-1 flex-col items-center justify-center">
+    <div className="flex flex-1 flex-col">
+      {/* Voice orb section - only visible in voice mode when active */}
+      {isVoiceMode && voiceState !== "idle" && (
+        <div className="flex flex-col items-center justify-center py-6 border-b">
           <VoiceOrb state={voiceState} />
-          <p className="mt-8 text-lg font-medium text-muted-foreground">
+          <p className="mt-4 text-sm font-medium text-muted-foreground">
             {getStatusText()}
           </p>
         </div>
+      )}
 
-        {/* Controls */}
-        <div className="w-full max-w-sm space-y-4">
-          {isTextMode ? (
-            <div className="flex gap-2">
-              <Input
-                placeholder="Type your message..."
-                value={textInput}
-                onChange={(e) => setTextInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendText()}
-                className="rounded-full"
-              />
-              <Button
-                size="icon"
-                className="h-10 w-10 shrink-0 rounded-full"
-                onClick={handleSendText}
-                disabled={!textInput.trim()}
-              >
-                <Send className="h-4 w-4" />
-              </Button>
-            </div>
-          ) : (
-            <Button
-              size="lg"
-              className={cn(
-                "h-16 w-full rounded-full text-lg font-medium transition-all",
-                isListening && "bg-destructive hover:bg-destructive/90"
-              )}
-              onClick={handleMicClick}
-            >
-              {isListening ? (
-                <>
-                  <MicOff className="mr-2 h-6 w-6" />
-                  Stop
-                </>
-              ) : (
-                <>
-                  <Mic className="mr-2 h-6 w-6" />
-                  Start Listening
-                </>
-              )}
-            </Button>
-          )}
-        </div>
-      </div>
+      {/* Chat thread */}
+      <ChatThread
+        messages={messages}
+        isLoading={isLoading}
+        onRetry={handleRetry}
+      />
+
+      {/* Message input */}
+      <MessageInput
+        onSendMessage={handleSendMessage}
+        onVoiceStart={handleVoiceStart}
+        onVoiceStop={handleVoiceStop}
+        isVoiceMode={isVoiceMode}
+        onVoiceModeChange={setIsVoiceMode}
+        isListening={isListening}
+        disabled={isLoading}
+      />
+    </div>
+  );
+};
+
+const VoiceChat = () => {
+  return (
+    <AppLayout title="Voice Chat">
+      <VoiceChatContent />
     </AppLayout>
   );
 };
