@@ -32,6 +32,7 @@ const ConversationSidebar = ({
         </h3>
         <Button
           onClick={onNewConversation}
+          variant="secondary"
           size="sm"
           className="h-6 rounded-full px-2.5 text-[10px]"
         >
