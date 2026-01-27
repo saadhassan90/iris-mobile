@@ -59,21 +59,21 @@ const MobileNav = ({
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-[280px] p-0 [&>button]:hidden">
-        <SheetHeader className="flex flex-row items-center justify-between border-b p-4">
-          <SheetTitle className="text-lg font-semibold">Menu</SheetTitle>
+        <SheetHeader className="flex flex-row items-center justify-between border-b px-3 py-2.5">
+          <SheetTitle className="text-sm font-medium">Menu</SheetTitle>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="h-8 w-8"
+            className="h-7 w-7"
             onClick={() => onOpenChange(false)}
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </Button>
         </SheetHeader>
         
-        <div className="flex flex-col py-2">
+        <div className="flex flex-col py-1.5">
           {/* Navigation Items - Top Section */}
-          <nav className="flex flex-col gap-1 px-3 pb-3">
+          <nav className="flex flex-col gap-0.5 px-2 pb-2">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
               return (
@@ -81,14 +81,14 @@ const MobileNav = ({
                   key={item.path}
                   onClick={() => handleNavigate(item.path)}
                   className={cn(
-                    "flex items-center gap-2 rounded-full px-3 py-2 text-left text-sm transition-colors",
+                    "flex items-center gap-2 rounded-full min-h-[44px] px-3 text-left text-xs transition-colors",
                     "hover:bg-accent",
                     isActive
                       ? "bg-primary text-primary-foreground"
                       : "text-foreground"
                   )}
                 >
-                  <item.icon className="h-4 w-4" />
+                  <item.icon className="h-3.5 w-3.5" />
                   <span className="font-medium">{item.label}</span>
                 </button>
               );
