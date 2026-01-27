@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
-import { useConversation } from "@elevenlabs/react";
+import { useConversation, useScribe, CommitStrategy } from "@elevenlabs/react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -16,14 +16,34 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
   const [connectionState, setConnectionState] = useState<VoiceConnectionState>("disconnected");
   const [inputVolume, setInputVolume] = useState(0);
   const [outputVolume, setOutputVolume] = useState(0);
+  const [partialTranscript, setPartialTranscript] = useState("");
   
   const optionsRef = useRef(options);
   const volumeIntervalRef = useRef<number | null>(null);
+  const lastCommittedRef = useRef<string>("");
 
   // Keep options ref in sync
   useEffect(() => {
     optionsRef.current = options;
   }, [options]);
+
+  // Scribe v2 for real-time transcription
+  const scribe = useScribe({
+    modelId: "scribe_v2_realtime",
+    commitStrategy: CommitStrategy.VAD,
+    onPartialTranscript: (data: { text: string }) => {
+      console.log("Scribe partial:", data.text);
+      setPartialTranscript(data.text);
+    },
+    onCommittedTranscript: (data: { text: string }) => {
+      console.log("Scribe committed:", data.text);
+      if (data.text && data.text !== lastCommittedRef.current) {
+        lastCommittedRef.current = data.text;
+        optionsRef.current.onUserTranscript?.(data.text);
+      }
+      setPartialTranscript("");
+    },
+  });
 
   // ElevenLabs conversation hook
   const conversation = useConversation({
@@ -36,6 +56,7 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       setConnectionState("disconnected");
       setInputVolume(0);
       setOutputVolume(0);
+      setPartialTranscript("");
       
       // Stop volume monitoring
       if (volumeIntervalRef.current) {
@@ -44,16 +65,21 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
       }
     },
     onMessage: (message) => {
-      // Log all messages for debugging
       console.log("ElevenLabs message:", JSON.stringify(message, null, 2));
       
-      // Handle different message formats from ElevenLabs
-      if (message.role === "user" && message.message) {
-        console.log("User transcript received:", message.message);
-        optionsRef.current.onUserTranscript?.(message.message);
-      } else if (message.role === "agent" && message.message) {
+      // Handle agent responses
+      if (message.role === "agent" && message.message) {
         console.log("Agent response received:", message.message);
         optionsRef.current.onAgentResponse?.(message.message);
+      }
+      // Also handle user transcripts if ElevenLabs sends them
+      if (message.role === "user" && message.message) {
+        console.log("User transcript from agent:", message.message);
+        // Don't duplicate if scribe already sent this
+        if (message.message !== lastCommittedRef.current) {
+          lastCommittedRef.current = message.message;
+          optionsRef.current.onUserTranscript?.(message.message);
+        }
       }
     },
     onError: (error) => {
@@ -80,11 +106,6 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
           const output = conversation.getOutputVolume?.() ?? 0;
           setInputVolume(input);
           setOutputVolume(output);
-          
-          // Debug: Log when there's significant input volume
-          if (input > 0.1) {
-            console.log("Microphone input detected:", input);
-          }
         } catch {
           // Ignore errors from volume methods
         }
@@ -105,32 +126,48 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
     setConnectionState("connecting");
 
     try {
-      // Request microphone permission first
+      // Request microphone permission
       console.log("Requesting microphone access...");
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log("Microphone access granted, tracks:", stream.getAudioTracks().length);
-      
-      // Stop the test stream - ElevenLabs SDK will create its own
+      console.log("Microphone access granted");
       stream.getTracks().forEach(track => track.stop());
 
-      // Get signed URL from edge function
-      console.log("Fetching signed URL...");
-      const { data, error } = await supabase.functions.invoke("elevenlabs-conversation-token");
+      // Get both tokens in parallel
+      console.log("Fetching tokens...");
+      const [conversationRes, scribeRes] = await Promise.all([
+        supabase.functions.invoke("elevenlabs-conversation-token"),
+        supabase.functions.invoke("elevenlabs-scribe-token"),
+      ]);
 
-      if (error) {
-        throw new Error(error.message || "Failed to get conversation token");
+      if (conversationRes.error) {
+        throw new Error(conversationRes.error.message || "Failed to get conversation token");
+      }
+      if (!conversationRes.data?.signedUrl) {
+        throw new Error("No signed URL received");
       }
 
-      if (!data?.signedUrl) {
-        throw new Error("No signed URL received from server");
-      }
-
+      // Start conversation
       console.log("Starting ElevenLabs session...");
-      
-      // Start the conversation with the signed URL
       await conversation.startSession({
-        signedUrl: data.signedUrl,
+        signedUrl: conversationRes.data.signedUrl,
       });
+
+      // Start scribe if token available (optional enhancement)
+      if (scribeRes.data?.token) {
+        console.log("Starting Scribe v2...");
+        try {
+          await scribe.connect({
+            token: scribeRes.data.token,
+            microphone: {
+              echoCancellation: true,
+              noiseSuppression: true,
+            },
+          });
+          console.log("Scribe connected");
+        } catch (scribeError) {
+          console.warn("Scribe failed to connect, continuing without:", scribeError);
+        }
+      }
 
       console.log("Session started successfully");
 
@@ -152,11 +189,14 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
         });
       }
     }
-  }, [connectionState, conversation, toast]);
+  }, [connectionState, conversation, scribe, toast]);
 
   const endCall = useCallback(async () => {
     try {
-      await conversation.endSession();
+      await Promise.all([
+        conversation.endSession(),
+        scribe.disconnect(),
+      ]);
     } catch (error) {
       console.error("Error ending call:", error);
     }
@@ -164,13 +204,16 @@ export const useIrisVoice = (options: UseIrisVoiceOptions = {}) => {
     setConnectionState("disconnected");
     setInputVolume(0);
     setOutputVolume(0);
-  }, [conversation]);
+    setPartialTranscript("");
+    lastCommittedRef.current = "";
+  }, [conversation, scribe]);
 
   return {
     connectionState,
     isSpeaking: conversation.isSpeaking,
     inputVolume,
     outputVolume,
+    partialTranscript,
     startCall,
     endCall,
   };
