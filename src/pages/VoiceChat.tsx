@@ -1,13 +1,12 @@
-import { useState } from "react";
 import { useConversationContext } from "@/components/layout/AppLayout";
-import VoiceOrb, { VoiceState } from "@/components/voice/VoiceOrb";
+import VoiceOrb from "@/components/voice/VoiceOrb";
 import ChatThread from "@/components/chat/ChatThread";
 import MessageInput from "@/components/chat/MessageInput";
+import { useIrisVoice } from "@/hooks/useIrisVoice";
+import { Button } from "@/components/ui/button";
+import { PhoneOff } from "lucide-react";
 
 const VoiceChat = () => {
-  const [voiceState, setVoiceState] = useState<VoiceState>("idle");
-  const [isListening, setIsListening] = useState(false);
-
   const {
     messages,
     isLoading,
@@ -15,6 +14,27 @@ const VoiceChat = () => {
     addMessage,
     updateMessageStatus,
   } = useConversationContext();
+
+  const {
+    connectionState,
+    isSpeaking,
+    inputVolume,
+    outputVolume,
+    startCall,
+    endCall,
+  } = useIrisVoice({
+    onUserTranscript: (transcript) => {
+      const msg = addMessage(transcript, 'user');
+      // Mark as transferred since it came from voice
+      updateMessageStatus(msg.id, 'transferred');
+    },
+    onAgentResponse: (response) => {
+      addMessage(response, 'assistant');
+    },
+  });
+
+  const isVoiceActive = connectionState === "connected" || connectionState === "connecting";
+  const isConnecting = connectionState === "connecting";
 
   const handleSendMessage = async (content: string) => {
     // Add user message
@@ -41,41 +61,10 @@ const VoiceChat = () => {
     }, 2500);
   };
 
-  const handleVoiceStart = () => {
-    setIsListening(true);
-    setVoiceState("listening");
-    
-    // Simulate voice processing after 3 seconds
-    setTimeout(() => {
-      setVoiceState("processing");
-      setTimeout(() => {
-        // Simulate transcribed message
-        handleSendMessage("This is a simulated voice message transcription.");
-        setVoiceState("idle");
-        setIsListening(false);
-      }, 1500);
-    }, 3000);
-  };
-
-  const handleVoiceStop = () => {
-    setIsListening(false);
-    if (voiceState === "listening") {
-      setVoiceState("processing");
-      setTimeout(() => {
-        handleSendMessage("Voice message stopped early - transcription would go here.");
-        setVoiceState("idle");
-      }, 1000);
-    } else {
-      setVoiceState("idle");
-    }
-  };
-
   const handleRetry = (messageId: string) => {
-    // Find the message and retry sending it
     const message = messages.find(m => m.id === messageId);
     if (message) {
       updateMessageStatus(messageId, 'sending');
-      // Simulate retry
       setTimeout(() => {
         updateMessageStatus(messageId, 'delivered');
         setTimeout(() => {
@@ -85,31 +74,69 @@ const VoiceChat = () => {
     }
   };
 
-  const getStatusText = () => {
-    switch (voiceState) {
-      case "listening":
-        return "Listening...";
-      case "processing":
-        return "Processing...";
-      case "speaking":
-        return "Speaking...";
-      default:
-        return "";
+  // Determine voice state for orb visualization
+  const getVoiceState = () => {
+    if (connectionState === "connecting") return "processing";
+    if (connectionState === "connected") {
+      if (isSpeaking) return "speaking";
+      return "listening";
     }
+    return "idle";
   };
 
-  return (
-    <div className="flex flex-1 flex-col">
-      {/* Voice orb section - visible when actively listening/processing */}
-      {voiceState !== "idle" && (
-        <div className="flex flex-col items-center justify-center py-6 border-b">
-          <VoiceOrb state={voiceState} />
-          <p className="mt-4 text-sm font-medium text-muted-foreground">
+  const getStatusText = () => {
+    if (connectionState === "connecting") return "Connecting to Iris...";
+    if (connectionState === "connected") {
+      if (isSpeaking) return "Iris is speaking...";
+      return "Listening...";
+    }
+    return "";
+  };
+
+  // Voice Mode UI
+  if (isVoiceActive) {
+    return (
+      <div className="flex flex-1 flex-col">
+        {/* Voice orb section - centered when in voice mode */}
+        <div className="flex flex-1 flex-col items-center justify-center">
+          <VoiceOrb 
+            state={getVoiceState()} 
+            inputVolume={inputVolume}
+            outputVolume={outputVolume}
+          />
+          <p className="mt-6 text-sm font-medium text-muted-foreground">
             {getStatusText()}
           </p>
+          
+          {/* End call button */}
+          <Button
+            variant="destructive"
+            size="lg"
+            className="mt-8 gap-2 rounded-full px-8"
+            onClick={endCall}
+          >
+            <PhoneOff className="h-5 w-5" />
+            End Call
+          </Button>
         </div>
-      )}
 
+        {/* Scrollable chat thread below (collapsed view) */}
+        {messages.length > 0 && (
+          <div className="border-t max-h-48 overflow-hidden">
+            <ChatThread
+              messages={messages}
+              isLoading={false}
+              onRetry={handleRetry}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Text Mode UI (default)
+  return (
+    <div className="flex flex-1 flex-col">
       {/* Chat thread */}
       <ChatThread
         messages={messages}
@@ -120,9 +147,10 @@ const VoiceChat = () => {
       {/* Message input with integrated voice button */}
       <MessageInput
         onSendMessage={handleSendMessage}
-        onVoiceStart={handleVoiceStart}
-        onVoiceStop={handleVoiceStop}
-        isListening={isListening}
+        onVoiceStart={startCall}
+        onVoiceStop={endCall}
+        isListening={false}
+        isConnecting={isConnecting}
         disabled={isLoading}
       />
     </div>
