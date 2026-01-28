@@ -15,17 +15,17 @@ const Chat = () => {
   const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
     if (!content.trim()) return;
 
-    // Add user message
-    const userMessage = addMessage(content, 'user');
-    setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
-
-    // Build conversation history for context
-    const conversationHistory = messages.map(msg => ({
-      role: msg.role,
-      content: msg.content,
-    }));
-
     try {
+      // Add user message
+      const userMessage = await addMessage(content, 'user');
+      setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
+
+      // Build conversation history for context
+      const conversationHistory = messages.map(msg => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
       const { data, error } = await supabase.functions.invoke('clawdbot-chat', {
         body: {
           message: content,
@@ -36,7 +36,7 @@ const Chat = () => {
       if (error) throw error;
 
       if (data?.response) {
-        addMessage(data.response, 'assistant');
+        await addMessage(data.response, 'assistant');
       } else if (data?.error) {
         toast.error(data.error);
       }

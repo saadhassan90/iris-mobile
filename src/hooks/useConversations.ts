@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type MessageStatus = 'sending' | 'delivered' | 'transferred' | 'failed';
 
@@ -19,199 +20,222 @@ export interface Conversation {
   createdAt: Date;
 }
 
-const CONVERSATIONS_KEY = 'clawdbot-conversations';
-const MESSAGES_KEY_PREFIX = 'clawdbot-messages-';
-
-const generateId = () => crypto.randomUUID();
-
-const parseDate = (dateStr: string | Date): Date => {
-  return typeof dateStr === 'string' ? new Date(dateStr) : dateStr;
-};
-
 export const useConversations = () => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Load conversations from localStorage on mount
+  // Load conversations from database on mount
   useEffect(() => {
-    const stored = localStorage.getItem(CONVERSATIONS_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored).map((conv: Conversation) => ({
-          ...conv,
-          createdAt: parseDate(conv.createdAt),
-          updatedAt: parseDate(conv.updatedAt),
-        }));
-        setConversations(parsed);
-        // Set first conversation as active if exists
-        if (parsed.length > 0 && !activeConversationId) {
-          setActiveConversationId(parsed[0].id);
-        }
-      } catch (e) {
-        console.error('Failed to parse conversations:', e);
+    const loadConversations = async () => {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select('*')
+        .order('updated_at', { ascending: false });
+
+      if (error) {
+        console.error('Failed to load conversations:', error);
+        return;
       }
-    }
+
+      const parsed: Conversation[] = data.map((conv) => ({
+        id: conv.id,
+        title: conv.title,
+        lastMessage: conv.last_message || undefined,
+        createdAt: new Date(conv.created_at),
+        updatedAt: new Date(conv.updated_at),
+      }));
+
+      setConversations(parsed);
+      if (parsed.length > 0 && !activeConversationId) {
+        setActiveConversationId(parsed[0].id);
+      }
+    };
+
+    loadConversations();
   }, []);
 
   // Load messages when active conversation changes
   useEffect(() => {
-    if (activeConversationId) {
-      const stored = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${activeConversationId}`);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored).map((msg: Message) => ({
-            ...msg,
-            createdAt: parseDate(msg.createdAt),
-          }));
-          setMessages(parsed);
-        } catch (e) {
-          console.error('Failed to parse messages:', e);
-          setMessages([]);
-        }
-      } else {
-        setMessages([]);
-      }
-    } else {
+    if (!activeConversationId) {
       setMessages([]);
+      return;
     }
+
+    const loadMessages = async () => {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', activeConversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Failed to load messages:', error);
+        setMessages([]);
+        return;
+      }
+
+      const parsed: Message[] = data.map((msg) => ({
+        id: msg.id,
+        conversationId: msg.conversation_id,
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+        createdAt: new Date(msg.created_at),
+        status: msg.status as MessageStatus,
+      }));
+
+      setMessages(parsed);
+    };
+
+    loadMessages();
   }, [activeConversationId]);
 
-  // Save conversations to localStorage
-  const saveConversations = useCallback((convs: Conversation[]) => {
-    localStorage.setItem(CONVERSATIONS_KEY, JSON.stringify(convs));
-    setConversations(convs);
-  }, []);
-
-  // Save messages to localStorage and update state
-  const saveMessages = useCallback((conversationId: string, msgs: Message[]) => {
-    localStorage.setItem(`${MESSAGES_KEY_PREFIX}${conversationId}`, JSON.stringify(msgs));
-    // Always update the messages state - the conversationId passed is the one we're working with
-    setMessages(msgs);
-  }, []);
-
   // Create a new conversation
-  const createConversation = useCallback(() => {
+  const createConversation = useCallback(async () => {
+    const { data, error } = await supabase
+      .from('conversations')
+      .insert({ title: 'New Conversation' })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create conversation:', error);
+      return null;
+    }
+
     const newConv: Conversation = {
-      id: generateId(),
-      title: 'New Conversation',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      id: data.id,
+      title: data.title,
+      lastMessage: data.last_message || undefined,
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
-    const updated = [newConv, ...conversations];
-    saveConversations(updated);
+
+    setConversations((prev) => [newConv, ...prev]);
     setActiveConversationId(newConv.id);
-    // Don't reset messages here - let addMessage handle it
+    setMessages([]);
     return newConv;
-  }, [conversations, saveConversations]);
+  }, []);
 
   // Delete a conversation
-  const deleteConversation = useCallback((id: string) => {
-    const updated = conversations.filter(c => c.id !== id);
-    saveConversations(updated);
-    localStorage.removeItem(`${MESSAGES_KEY_PREFIX}${id}`);
-    
-    if (activeConversationId === id) {
-      setActiveConversationId(updated.length > 0 ? updated[0].id : null);
+  const deleteConversation = useCallback(async (id: string) => {
+    const { error } = await supabase
+      .from('conversations')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Failed to delete conversation:', error);
+      return;
     }
-  }, [conversations, activeConversationId, saveConversations]);
+
+    setConversations((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      if (activeConversationId === id) {
+        setActiveConversationId(updated.length > 0 ? updated[0].id : null);
+      }
+      return updated;
+    });
+  }, [activeConversationId]);
 
   // Add a message to the active conversation
-  const addMessage = useCallback((content: string, role: 'user' | 'assistant' = 'user'): Message => {
-    if (!activeConversationId) {
-      // Create new conversation if none active
-      const newConv = createConversation();
-      const message: Message = {
-        id: generateId(),
-        conversationId: newConv.id,
+  const addMessage = useCallback(async (content: string, role: 'user' | 'assistant' = 'user'): Promise<Message> => {
+    let conversationId = activeConversationId;
+
+    // Create new conversation if none active
+    if (!conversationId) {
+      const newConv = await createConversation();
+      if (!newConv) {
+        throw new Error('Failed to create conversation');
+      }
+      conversationId = newConv.id;
+    }
+
+    const status: MessageStatus = role === 'user' ? 'sending' : 'transferred';
+
+    // Insert message into database
+    const { data: msgData, error: msgError } = await supabase
+      .from('messages')
+      .insert({
+        conversation_id: conversationId,
         role,
         content,
-        createdAt: new Date(),
-        status: role === 'user' ? 'sending' : 'transferred',
-      };
-      saveMessages(newConv.id, [message]);
-      
-      // Update conversation title and lastMessage
-      const finalConvs = [{ 
-        ...newConv, 
-        title: content.slice(0, 30) + (content.length > 30 ? '...' : ''),
-        lastMessage: content.slice(0, 50),
-        updatedAt: new Date() 
-      }, ...conversations];
-      saveConversations(finalConvs);
-      
-      return message;
+        status,
+      })
+      .select()
+      .single();
+
+    if (msgError) {
+      console.error('Failed to add message:', msgError);
+      throw msgError;
     }
 
     const message: Message = {
-      id: generateId(),
-      conversationId: activeConversationId,
-      role,
-      content,
-      createdAt: new Date(),
-      status: role === 'user' ? 'sending' : 'transferred',
+      id: msgData.id,
+      conversationId: msgData.conversation_id,
+      role: msgData.role as 'user' | 'assistant',
+      content: msgData.content,
+      createdAt: new Date(msgData.created_at),
+      status: msgData.status as MessageStatus,
     };
 
-    // Read latest messages from localStorage to avoid stale state
-    let currentMessages: Message[] = [];
-    const stored = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${activeConversationId}`);
-    if (stored) {
-      try {
-        currentMessages = JSON.parse(stored).map((msg: Message) => ({
-          ...msg,
-          createdAt: parseDate(msg.createdAt as unknown as string),
-        }));
-      } catch (e) {
-        console.error('Failed to parse messages:', e);
-      }
-    }
-
-    const updatedMessages = [...currentMessages, message];
-    saveMessages(activeConversationId, updatedMessages);
+    // Update local messages state
+    setMessages((prev) => [...prev, message]);
 
     // Update conversation title (first user message) and lastMessage
-    const updatedConvs = conversations.map(c => {
-      if (c.id !== activeConversationId) return c;
-      
-      const isFirstMessage = currentMessages.length === 0 && role === 'user';
-      return {
-        ...c,
-        title: isFirstMessage ? content.slice(0, 30) + (content.length > 30 ? '...' : '') : c.title,
-        lastMessage: content.slice(0, 50),
-        updatedAt: new Date(),
-      };
-    });
-    saveConversations(updatedConvs);
+    const isFirstMessage = messages.length === 0 && role === 'user';
+    const updates: { last_message: string; title?: string } = {
+      last_message: content.slice(0, 50),
+    };
+    if (isFirstMessage) {
+      updates.title = content.slice(0, 30) + (content.length > 30 ? '...' : '');
+    }
+
+    const { error: convError } = await supabase
+      .from('conversations')
+      .update(updates)
+      .eq('id', conversationId);
+
+    if (convError) {
+      console.error('Failed to update conversation:', convError);
+    }
+
+    // Update local conversations state
+    setConversations((prev) =>
+      prev.map((c) => {
+        if (c.id !== conversationId) return c;
+        return {
+          ...c,
+          title: isFirstMessage ? updates.title! : c.title,
+          lastMessage: updates.last_message,
+          updatedAt: new Date(),
+        };
+      })
+    );
 
     return message;
-  }, [activeConversationId, conversations, createConversation, saveMessages, saveConversations]);
+  }, [activeConversationId, messages.length, createConversation]);
 
   // Update message status
-  const updateMessageStatus = useCallback((messageId: string, status: MessageStatus) => {
-    if (!activeConversationId) return;
+  const updateMessageStatus = useCallback(async (messageId: string, status: MessageStatus) => {
+    const { error } = await supabase
+      .from('messages')
+      .update({ status })
+      .eq('id', messageId);
 
-    // Read latest messages from localStorage to avoid stale state
-    const stored = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${activeConversationId}`);
-    if (!stored) return;
-    
-    try {
-      const currentMessages = JSON.parse(stored).map((msg: Message) => ({
-        ...msg,
-        createdAt: parseDate(msg.createdAt as unknown as string),
-      }));
-      
-      const updatedMessages = currentMessages.map((msg: Message) =>
-        msg.id === messageId ? { ...msg, status } : msg
-      );
-      saveMessages(activeConversationId, updatedMessages);
-    } catch (e) {
-      console.error('Failed to update message status:', e);
+    if (error) {
+      console.error('Failed to update message status:', error);
+      return;
     }
-  }, [activeConversationId, saveMessages]);
+
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === messageId ? { ...msg, status } : msg))
+    );
+  }, []);
 
   // Get active conversation
-  const activeConversation = conversations.find(c => c.id === activeConversationId) || null;
+  const activeConversation = conversations.find((c) => c.id === activeConversationId) || null;
 
   return {
     conversations,
