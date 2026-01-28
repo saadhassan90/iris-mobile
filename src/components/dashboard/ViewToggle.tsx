@@ -8,11 +8,11 @@ interface ViewToggleProps {
 
 const ViewToggle = ({ view, onViewChange }: ViewToggleProps) => {
   return (
-    <div className="inline-flex rounded-full border bg-muted p-1">
+    <div className="flex w-full rounded-full border bg-muted p-1">
       <button
         onClick={() => onViewChange("list")}
         className={cn(
-          "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+          "flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
           view === "list"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"
@@ -24,7 +24,7 @@ const ViewToggle = ({ view, onViewChange }: ViewToggleProps) => {
       <button
         onClick={() => onViewChange("kanban")}
         className={cn(
-          "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
+          "flex flex-1 items-center justify-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-colors",
           view === "kanban"
             ? "bg-background text-foreground shadow-sm"
             : "text-muted-foreground hover:text-foreground"
