@@ -23,15 +23,23 @@ const VoiceChat = () => {
   const conversationHistoryRef = useRef<Message[]>([]);
 
   // Voice callbacks
-  const handleUserTranscript = useCallback((transcript: string) => {
-    const userMessage = addMessage(transcript, 'user');
-    setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
-    conversationHistoryRef.current.push({ role: "user", content: transcript });
+  const handleUserTranscript = useCallback(async (transcript: string) => {
+    try {
+      const userMessage = await addMessage(transcript, 'user');
+      setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
+      conversationHistoryRef.current.push({ role: "user", content: transcript });
+    } catch (error) {
+      console.error('Failed to save user transcript:', error);
+    }
   }, [addMessage, updateMessageStatus]);
 
-  const handleAgentResponse = useCallback((response: string) => {
-    addMessage(response, 'assistant');
-    conversationHistoryRef.current.push({ role: "assistant", content: response });
+  const handleAgentResponse = useCallback(async (response: string) => {
+    try {
+      await addMessage(response, 'assistant');
+      conversationHistoryRef.current.push({ role: "assistant", content: response });
+    } catch (error) {
+      console.error('Failed to save agent response:', error);
+    }
   }, [addMessage]);
 
   // Initialize voice hook
