@@ -43,7 +43,7 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
           />
           
           <div className={cn(
-            "flex-1 min-w-0 space-y-2",
+            "flex-1 min-w-0 space-y-2 overflow-hidden",
             isUser && "text-right"
           )}>
             {/* Name and timestamp */}

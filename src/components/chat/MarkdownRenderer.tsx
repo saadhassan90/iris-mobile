@@ -21,7 +21,7 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
   };
 
   return (
-    <div className="relative group my-3">
+    <div className="relative group my-3 max-w-full overflow-hidden">
       <div className="flex items-center justify-between bg-muted/80 px-3 py-1.5 rounded-t-lg border border-b-0 border-border">
         <span className="text-xs text-muted-foreground font-mono">
           {language || "plaintext"}
@@ -43,33 +43,35 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
           )}
         </button>
       </div>
-      <SyntaxHighlighter
-        language={language || "text"}
-        style={oneDark}
-        customStyle={{
-          margin: 0,
-          borderTopLeftRadius: 0,
-          borderTopRightRadius: 0,
-          borderBottomLeftRadius: "0.5rem",
-          borderBottomRightRadius: "0.5rem",
-          fontSize: "0.8125rem",
-          lineHeight: "1.5",
-        }}
-        codeTagProps={{
-          style: {
-            fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
-          },
-        }}
-      >
-        {children}
-      </SyntaxHighlighter>
+      <div className="overflow-x-auto">
+        <SyntaxHighlighter
+          language={language || "text"}
+          style={oneDark}
+          customStyle={{
+            margin: 0,
+            borderTopLeftRadius: 0,
+            borderTopRightRadius: 0,
+            borderBottomLeftRadius: "0.5rem",
+            borderBottomRightRadius: "0.5rem",
+            fontSize: "0.8125rem",
+            lineHeight: "1.5",
+          }}
+          codeTagProps={{
+            style: {
+              fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
+            },
+          }}
+        >
+          {children}
+        </SyntaxHighlighter>
+      </div>
     </div>
   );
 };
 
 const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
   return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-none prose-headings:text-foreground prose-p:text-foreground", className)}>
+    <div className={cn("prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-headings:text-foreground prose-p:text-foreground", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
