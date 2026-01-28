@@ -23,56 +23,48 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
   return (
     <div
       className={cn(
-        "flex w-full animate-fade-in gap-3",
-        isUser ? "justify-end" : "justify-start"
+        "flex w-full animate-fade-in gap-4 py-4",
+        isUser ? "bg-transparent" : "bg-muted/30"
       )}
     >
-      {/* Iris avatar - left side */}
-      {!isUser && (
-        <img 
-          src={irisAvatar} 
-          alt="Iris" 
-          className="h-8 w-8 rounded-full object-cover shrink-0 mt-0.5"
-        />
-      )}
-      
-      <div className={cn("max-w-[75%] space-y-1", isUser && "items-end")}>
-        <div
-          onClick={handleClick}
-          className={cn(
-            "rounded-2xl px-4 py-2.5 text-sm",
-            isUser
-              ? "bg-primary text-primary-foreground rounded-br-md"
-              : "bg-muted rounded-bl-md",
-            message.status === 'failed' && "cursor-pointer opacity-70"
-          )}
-        >
-          {isUser ? (
-            <p className="whitespace-pre-wrap break-words">{message.content}</p>
-          ) : (
-            <MarkdownRenderer content={message.content} />
-          )}
-        </div>
-        
-        <div className={cn(
-          "flex items-center gap-1.5 px-1",
-          isUser ? "justify-end" : "justify-start"
-        )}>
-          <span className="text-[10px] text-muted-foreground">
-            {format(message.createdAt, 'HH:mm')}
-          </span>
-          {isUser && <ReadReceipt status={message.status} />}
+      <div className="w-full max-w-3xl mx-auto px-4">
+        <div className="flex gap-4">
+          {/* Avatar */}
+          <img 
+            src={isUser ? userAvatar : irisAvatar} 
+            alt={isUser ? "You" : "Iris"} 
+            className="h-7 w-7 rounded-full object-cover shrink-0 mt-1"
+          />
+          
+          <div className="flex-1 min-w-0 space-y-2">
+            {/* Name and timestamp */}
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-foreground">
+                {isUser ? "You" : "Iris"}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {format(message.createdAt, 'HH:mm')}
+              </span>
+              {isUser && <ReadReceipt status={message.status} />}
+            </div>
+            
+            {/* Message content */}
+            <div
+              onClick={handleClick}
+              className={cn(
+                "text-sm text-foreground",
+                message.status === 'failed' && "cursor-pointer opacity-70"
+              )}
+            >
+              {isUser ? (
+                <p className="whitespace-pre-wrap break-words leading-relaxed">{message.content}</p>
+              ) : (
+                <MarkdownRenderer content={message.content} />
+              )}
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* User avatar - right side */}
-      {isUser && (
-        <img 
-          src={userAvatar} 
-          alt="You" 
-          className="h-8 w-8 rounded-full object-cover shrink-0 mt-0.5"
-        />
-      )}
     </div>
   );
 };

@@ -61,7 +61,7 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
         ref={scrollRef}
         onScrollCapture={handleScroll}
       >
-        <div className="flex flex-col gap-3 p-4 pb-24">
+        <div className="flex flex-col divide-y divide-border pb-24">
           {messages.map((message) => (
             <MessageBubble
               key={message.id}
@@ -71,11 +71,19 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
           ))}
           
           {isLoading && (
-            <div className="flex justify-start animate-fade-in">
-              <div className="bg-muted rounded-2xl rounded-bl-md px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground">Thinking...</span>
+            <div className="flex w-full animate-fade-in gap-4 py-4 bg-muted/30">
+              <div className="w-full max-w-3xl mx-auto px-4">
+                <div className="flex gap-4">
+                  <div className="h-7 w-7 rounded-full bg-muted animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium text-foreground">Iris</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Thinking...</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
