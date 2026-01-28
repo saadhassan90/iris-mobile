@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Mic, LayoutDashboard, Settings, X } from "lucide-react";
+import { MessageSquare, Mic, LayoutDashboard, Settings, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -17,7 +17,8 @@ interface MobileNavProps {
 }
 
 const navItems = [
-  { label: "Talk to Iris", icon: Mic, path: "/" },
+  { label: "Chat", icon: MessageSquare, path: "/" },
+  { label: "Talk to Iris", icon: Mic, path: "/voice" },
   { label: "Agenda", icon: LayoutDashboard, path: "/dashboard" },
   { label: "Settings", icon: Settings, path: "/settings" },
 ];
@@ -41,7 +42,7 @@ const MobileNav = ({
 
   const handleSelectConversation = (id: string) => {
     onSelectConversation?.(id);
-    // Navigate to voice chat if not already there
+    // Navigate to chat if not already there
     if (location.pathname !== "/") {
       navigate("/");
     }
