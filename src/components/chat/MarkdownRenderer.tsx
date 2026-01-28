@@ -21,29 +21,29 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
   };
 
   return (
-    <div className="relative group my-3 max-w-full overflow-hidden">
-      <div className="flex items-center justify-between bg-muted/80 px-3 py-1.5 rounded-t-lg border border-b-0 border-border">
-        <span className="text-xs text-muted-foreground font-mono">
+    <div className="relative group my-3 w-full overflow-hidden" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+      <div className="flex items-center justify-between bg-muted/80 px-2 sm:px-3 py-1.5 rounded-t-lg border border-b-0 border-border">
+        <span className="text-xs text-muted-foreground font-mono truncate">
           {language || "plaintext"}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
         >
           {copied ? (
             <>
               <Check className="h-3.5 w-3.5" />
-              <span>Copied</span>
+              <span className="hidden sm:inline">Copied</span>
             </>
           ) : (
             <>
               <Copy className="h-3.5 w-3.5" />
-              <span>Copy</span>
+              <span className="hidden sm:inline">Copy</span>
             </>
           )}
         </button>
       </div>
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto w-full">
         <SyntaxHighlighter
           language={language || "text"}
           style={oneDark}
@@ -53,14 +53,16 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
             borderTopRightRadius: 0,
             borderBottomLeftRadius: "0.5rem",
             borderBottomRightRadius: "0.5rem",
-            fontSize: "0.8125rem",
+            fontSize: "0.75rem",
             lineHeight: "1.5",
+            maxWidth: "100%",
           }}
           codeTagProps={{
             style: {
               fontFamily: "ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace",
             },
           }}
+          wrapLongLines={false}
         >
           {children}
         </SyntaxHighlighter>
@@ -71,7 +73,7 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
 
 const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
   return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-full overflow-hidden prose-headings:text-foreground prose-p:text-foreground", className)}>
+    <div className={cn("prose prose-sm dark:prose-invert max-w-full w-full overflow-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-pre:max-w-full prose-pre:overflow-x-auto", className)}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
