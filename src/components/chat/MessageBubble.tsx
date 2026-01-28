@@ -23,23 +23,23 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
   return (
     <div
       className={cn(
-        "flex w-full animate-fade-in gap-4 py-4",
+        "flex w-full animate-fade-in py-4 overflow-hidden",
         isUser ? "bg-transparent" : "bg-muted/30"
       )}
     >
       <div className={cn(
-        "w-full max-w-3xl px-4",
-        isUser ? "ml-auto mr-4" : "mr-auto ml-4"
+        "w-full px-3 sm:px-4 max-w-full sm:max-w-3xl",
+        isUser ? "ml-auto sm:mr-4" : "mr-auto sm:ml-4"
       )}>
         <div className={cn(
-          "flex gap-4",
+          "flex gap-2 sm:gap-4",
           isUser && "flex-row-reverse"
         )}>
           {/* Avatar */}
           <img 
             src={isUser ? userAvatar : irisAvatar} 
             alt={isUser ? "You" : "Iris"} 
-            className="h-7 w-7 rounded-full object-cover shrink-0 mt-1"
+            className="h-6 w-6 sm:h-7 sm:w-7 rounded-full object-cover shrink-0 mt-1"
           />
           
           <div className={cn(
@@ -64,7 +64,7 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
             <div
               onClick={handleClick}
               className={cn(
-                "text-sm text-foreground",
+                "text-sm text-foreground overflow-hidden",
                 message.status === 'failed' && "cursor-pointer opacity-70"
               )}
             >
