@@ -27,8 +27,14 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
         isUser ? "bg-transparent" : "bg-muted/30"
       )}
     >
-      <div className="w-full max-w-3xl mx-auto px-4">
-        <div className="flex gap-4">
+      <div className={cn(
+        "w-full max-w-3xl px-4",
+        isUser ? "ml-auto mr-4" : "mr-auto ml-4"
+      )}>
+        <div className={cn(
+          "flex gap-4",
+          isUser && "flex-row-reverse"
+        )}>
           {/* Avatar */}
           <img 
             src={isUser ? userAvatar : irisAvatar} 
@@ -36,9 +42,15 @@ const MessageBubble = ({ message, onRetry }: MessageBubbleProps) => {
             className="h-7 w-7 rounded-full object-cover shrink-0 mt-1"
           />
           
-          <div className="flex-1 min-w-0 space-y-2">
+          <div className={cn(
+            "flex-1 min-w-0 space-y-2",
+            isUser && "text-right"
+          )}>
             {/* Name and timestamp */}
-            <div className="flex items-center gap-2">
+            <div className={cn(
+              "flex items-center gap-2",
+              isUser && "justify-end"
+            )}>
               <span className="text-sm font-medium text-foreground">
                 {isUser ? "You" : "Iris"}
               </span>
