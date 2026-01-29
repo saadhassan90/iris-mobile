@@ -159,17 +159,19 @@ const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
           ),
           // Tables
           table: ({ children }) => (
-            <div className="overflow-x-auto my-4 rounded-lg border border-border">
-              <table className="min-w-full border-collapse text-sm">
-                {children}
-              </table>
+            <div className="my-4 w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+              <div className="overflow-x-auto">
+                <table className="min-w-full border-collapse text-xs sm:text-sm whitespace-nowrap">
+                  {children}
+                </table>
+              </div>
             </div>
           ),
           thead: ({ children }) => (
             <thead className="bg-muted/70">{children}</thead>
           ),
           th: ({ children }) => (
-            <th className="border-b border-border px-4 py-2.5 text-left font-semibold text-foreground">
+            <th className="border-b border-border px-2 sm:px-4 py-2 sm:py-2.5 text-left font-semibold text-foreground">
               {children}
             </th>
           ),
@@ -177,7 +179,7 @@ const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
             <tbody className="divide-y divide-border">{children}</tbody>
           ),
           td: ({ children }) => (
-            <td className="px-4 py-2.5 text-foreground">{children}</td>
+            <td className="px-2 sm:px-4 py-2 sm:py-2.5 text-foreground">{children}</td>
           ),
         }}
       >
