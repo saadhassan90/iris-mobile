@@ -1,183 +1,201 @@
 
+# Business Card Scanner Feature
 
-# Hold-to-Talk Voice Input Feature
-
-This plan adds a WhatsApp-style voice input button to the chat input area. Hold the button to record, release to transcribe and send, or swipe left to cancel.
+This plan adds a complete business card scanning system that allows you to take a photo of a business card, have it automatically extract contact information using AI vision, and save the contact to a database.
 
 ---
 
-## User Experience
+## How It Will Work
 
 ```text
-IDLE STATE                          RECORDING STATE
-+---------------------------+       +---------------------------+
-| [+] [___input___] [⬆][🎤] |  -->  | [◀ Swipe to cancel] [🔴] |
-+---------------------------+       +---------------------------+
-                                          Hold and speak...
-                                    
-                                    RELEASE: Send transcribed text
-                                    SWIPE LEFT: Cancel recording
++-------------------+     +------------------+     +----------------+     +------------------+
+|  Take Photo /     | --> |  Upload to Chat  | --> |  AI Extracts   | --> |  Save Contact    |
+|  Upload Image     |     |  (existing flow) |     |  Contact Info  |     |  to Database     |
++-------------------+     +------------------+     +----------------+     +------------------+
 ```
 
-**Interaction Flow:**
-1. User presses and holds the microphone button
-2. Microphone permission requested (if not already granted)
-3. Recording starts with visual feedback (red pulsing indicator)
-4. Live partial transcription shown above input area
-5. **Release** → Final transcription sent as chat message
-6. **Swipe left** → Recording cancelled, no message sent
+**User Flow:**
+1. Click the "+" button in chat to attach a business card photo
+2. Type "scan this business card" or similar message
+3. AI analyzes the image and extracts contact details
+4. Iris responds with the extracted contact information
+5. Contact is automatically saved to the database
+6. User sees confirmation with the saved contact details
 
 ---
 
-## Technical Approach
+## What Will Be Built
 
-### Speech-to-Text Integration
+### 1. Database: Contacts Table
 
-The project already has ElevenLabs Scribe v2 integration set up:
-- Edge function exists: `elevenlabs-scribe-token`
-- `@elevenlabs/react` package already installed
-- `ELEVENLABS_API_KEY` secret configured
+A new table to store scanned business card contacts:
 
-We'll reuse the existing Scribe infrastructure but create a new hook specifically for this dictation use case (simpler than the full voice agent flow).
+| Field | Type | Description |
+|-------|------|-------------|
+| id | uuid | Unique identifier |
+| first_name | text | Contact's first name |
+| last_name | text | Contact's last name |
+| email | text | Email address |
+| phone | text | Phone number |
+| company | text | Company/organization name |
+| job_title | text | Job title/position |
+| website | text | Website URL |
+| address | text | Physical address |
+| notes | text | Additional notes |
+| source_image_url | text | URL to stored business card image |
+| raw_extracted_text | text | Raw OCR text for reference |
+| created_at | timestamp | When contact was created |
+| updated_at | timestamp | Last update time |
 
----
+### 2. File Storage: Business Card Images
 
-## Implementation Steps
+A storage bucket to store the uploaded business card images:
+- Bucket name: `business-cards`
+- Public access for easy image viewing
+- Images stored with unique names
 
-### Step 1: Create Dictation Hook
+### 3. Backend Function: Scan Business Card
 
-**New File:** `src/hooks/useDictation.ts`
+A new Edge Function that:
+- Receives the image (as base64 or URL after storage upload)
+- Uses Lovable AI with vision capabilities (Gemini) to extract text
+- Parses the extracted information into structured JSON
+- Saves the contact to the database
+- Returns the parsed contact data
 
-A focused hook for hold-to-talk transcription:
-- Connects to ElevenLabs Scribe v2 on press
-- Streams partial transcripts in real-time
-- Returns final committed transcript on release
-- Handles microphone permissions and errors
-- Tracks recording state for UI feedback
+### 4. Frontend: Chat Integration
 
-Key functionality:
-- `startRecording()` - Begin capturing audio and streaming to Scribe
-- `stopRecording()` - Disconnect and return final transcript
-- `cancelRecording()` - Disconnect without returning transcript
-- `isRecording` - Boolean state for UI
-- `partialTranscript` - Live preview text
-
-### Step 2: Create Voice Input UI Component
-
-**New File:** `src/components/chat/VoiceInputButton.tsx`
-
-A standalone component handling the hold-to-talk interaction:
-- Touch/pointer event handling for hold gestures
-- Swipe-left detection for cancellation (threshold ~80px)
-- Visual states:
-  - **Idle**: Standard mic icon button
-  - **Recording**: Red pulsing indicator with slide-to-cancel hint
-  - **Transcribing**: Brief loading state before send
-- Haptic feedback via navigator.vibrate (where supported)
-
-### Step 3: Create Recording Overlay
-
-**New File:** `src/components/chat/RecordingOverlay.tsx`
-
-Overlay shown during recording:
-- Displayed above the input area when recording
-- Shows partial transcript in real-time
-- "Slide to cancel" indicator with arrow
-- Recording duration timer
-- Red recording pulse animation
-
-### Step 4: Integrate into MessageInput
-
-**Modified File:** `src/components/chat/MessageInput.tsx`
-
-Changes:
-- Add `VoiceInputButton` next to the send button
-- Show `RecordingOverlay` when recording is active
-- Pass `onSendMessage` callback to send transcribed text
-- Manage recording state at the component level
-
-Layout adjustment:
-```text
-CURRENT:  [+] [input field with ⬆] [🎤 optional]
-UPDATED:  [+] [input field with ⬆] [🎤 always]
-```
-
-The mic button will be always visible (not conditionally rendered based on `onVoiceClick`).
+Updates to the chat system to:
+- Detect when an image is attached with a scan request
+- Upload the image to storage first
+- Call the scan function with the image URL
+- Display the extracted contact in a nice format
+- Show a success message with the saved contact
 
 ---
 
-## Component Architecture
+## Technical Details
+
+### Edge Function: `scan-business-card`
 
 ```text
-MessageInput
-├── VoiceInputButton (new)
-│   └── useDictation hook (new)
-└── RecordingOverlay (new)
-    └── Displays partialTranscript
-    └── Swipe-to-cancel indicator
+Input:
+- imageBase64: Base64-encoded image data
+- message: User's text message (for context)
+
+Processing:
+1. Upload image to Supabase Storage (business-cards bucket)
+2. Send image URL to Gemini Pro Vision via Lovable AI
+3. Parse response into contact JSON
+4. Insert contact into database
+5. Return contact data and image URL
+
+Output:
+{
+  success: true,
+  contact: { ...contact fields },
+  imageUrl: "https://..."
+}
 ```
+
+### AI Prompt Strategy
+
+The AI will receive a carefully crafted prompt to extract:
+- Name (split into first/last)
+- Email addresses
+- Phone numbers
+- Company name
+- Job title
+- Website
+- Physical address
+
+The prompt will instruct the AI to return a clean JSON object.
+
+### Chat Flow Enhancement
+
+When processing a message with an attached image:
+1. Check if the message suggests business card scanning (keywords: "scan", "business card", "contact", etc.)
+2. If detected, route to the scan-business-card function instead of regular chat
+3. Display the extracted contact in a formatted card component
 
 ---
 
-## Gesture Handling Details
-
-### Hold-to-Talk Logic
-
-```typescript
-// Pointer events for cross-platform support
-onPointerDown → Start recording, track start position
-onPointerMove → If deltaX < -80px while recording → show cancel state
-onPointerUp → If in cancel zone → cancelRecording(), else → sendTranscript()
-onPointerLeave → If recording → treat as release (send)
-```
-
-### Cancel Swipe Detection
-
-- Track initial touch/pointer X position
-- Calculate horizontal delta during move
-- Threshold: -80px (swipe left)
-- Visual feedback: Button slides left, cancel text appears
-- Release in cancel zone discards recording
-
----
-
-## File Changes Summary
+## File Changes
 
 ### New Files
 
 | File | Purpose |
 |------|---------|
-| `src/hooks/useDictation.ts` | Scribe-based hold-to-talk transcription |
-| `src/components/chat/VoiceInputButton.tsx` | Hold/release/swipe gesture button |
-| `src/components/chat/RecordingOverlay.tsx` | Recording status + partial transcript display |
+| `supabase/functions/scan-business-card/index.ts` | Edge function for OCR and contact extraction |
+| `src/components/chat/ContactCard.tsx` | Display component for extracted contacts |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/components/chat/MessageInput.tsx` | Integrate VoiceInputButton, show overlay |
+| `src/pages/Chat.tsx` | Handle image uploads for scanning |
+| `supabase/config.toml` | Add new function configuration |
+
+### Database Migrations
+
+| Change | Description |
+|--------|-------------|
+| Create `contacts` table | Store extracted contact information |
+| Create `business-cards` storage bucket | Store uploaded images |
 
 ---
 
-## Visual Design
+## Implementation Sequence
 
-### Recording States
+1. **Database Setup**
+   - Create the `contacts` table with all fields
+   - Create the `business-cards` storage bucket with public access
 
-| State | Visual |
-|-------|--------|
-| Idle | Gray mic icon button |
-| Recording | Red pulsing mic, "Slide to cancel ◀" text appears |
-| Cancel Zone | Button slides left, red X icon, "Release to cancel" |
-| Processing | Brief spinner before message sends |
+2. **Edge Function**
+   - Create `scan-business-card` function
+   - Implement image upload to storage
+   - Integrate Lovable AI (Gemini) for vision OCR
+   - Parse and save contact to database
 
-### Recording Overlay
+3. **Frontend Components**
+   - Create `ContactCard` component for nice display
+   - Update markdown renderer to handle contact cards
+
+4. **Chat Integration**
+   - Modify `Chat.tsx` to detect business card scans
+   - Upload image to storage before processing
+   - Call scan function and display results
+
+---
+
+## AI Model Selection
+
+Using **Gemini 2.5 Pro** (`google/gemini-2.5-pro`) for this feature because:
+- Best-in-class vision + text capabilities
+- Handles image analysis with high accuracy
+- Available through Lovable AI (no API key needed)
+- Excellent at structured data extraction
+
+---
+
+## Example Interaction
 
 ```text
-┌─────────────────────────────────┐
-│  "Hello, I want to schedule..." │  ← Partial transcript
-│                                 │
-│  ◀ Slide to cancel    ● 0:03   │  ← Controls
-└─────────────────────────────────┘
+User: [Attaches business card photo]
+      "Scan this business card"
+
+Iris: I've scanned the business card and saved the contact:
+
+      ┌─────────────────────────────────────┐
+      │  👤 John Smith                      │
+      │  📧 john.smith@acme.com            │
+      │  📱 +1 (555) 123-4567              │
+      │  🏢 Acme Corporation               │
+      │  💼 Senior Product Manager         │
+      │  🌐 www.acme.com                   │
+      └─────────────────────────────────────┘
+
+      Contact saved successfully!
 ```
 
 ---
@@ -186,18 +204,9 @@ onPointerLeave → If recording → treat as release (send)
 
 | Scenario | Behavior |
 |----------|----------|
-| Microphone denied | Toast: "Microphone access required for voice input" |
-| Token fetch failed | Toast: "Voice unavailable, please type instead" |
-| Scribe connection lost | Auto-cancel, toast notification |
-| Empty transcript | Don't send, show brief "No speech detected" |
-
----
-
-## Technical Notes
-
-- Uses ElevenLabs Scribe v2 (`scribe_v2_realtime`) with VAD commit strategy
-- Token fetched from existing `elevenlabs-scribe-token` edge function
-- Recording auto-commits via Voice Activity Detection (silence detection)
-- Maximum recording duration: 60 seconds (auto-stop with warning)
-- Supports both touch (mobile) and mouse (desktop) interactions
-
+| No image attached | Prompt user to attach a business card image |
+| Image too blurry | Notify user and suggest a clearer photo |
+| No text detected | Inform user that no contact info was found |
+| Partial extraction | Save what was found, note missing fields |
+| Storage upload fails | Show error, don't proceed with scan |
+| Database save fails | Show extracted data but note save failure |
