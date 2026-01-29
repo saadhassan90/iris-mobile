@@ -78,17 +78,27 @@ const Chat = () => {
         }
 
         if (data?.success && data?.contact) {
-          // Format contact as a nice response with special marker
           const contact = data.contact;
-          const contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || 'Contact';
           
-          const responseMessage = `I've scanned the business card and saved the contact:
+          // Check if any meaningful contact info was extracted
+          const hasContactInfo = contact.first_name || contact.last_name || 
+            contact.email || contact.phone || contact.company;
+          
+          if (hasContactInfo) {
+            // Format contact as a nice response with special marker
+            const contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || 'Contact';
+            
+            const responseMessage = `I've scanned the business card and saved the contact:
 
 <!-- CONTACT_CARD:${JSON.stringify(contact)} -->
 
 **${contactName}** has been added to your contacts!`;
 
-          await addMessage(responseMessage, 'assistant');
+            await addMessage(responseMessage, 'assistant');
+          } else {
+            // AI couldn't extract any contact info - likely not a business card
+            await addMessage("I couldn't find any contact information in that image. Please make sure you're uploading a clear photo of a business card.", 'assistant');
+          }
         } else if (data?.error) {
           await addMessage(`I couldn't scan that business card: ${data.error}`, 'assistant');
         } else {
