@@ -42,7 +42,7 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
   };
 
   return (
-    <div className="relative group my-3 w-full overflow-hidden" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+    <div className="relative group my-2 sm:my-3 w-full overflow-hidden max-w-full">
       <div className="flex items-center justify-between bg-muted/80 px-2 sm:px-3 py-1.5 rounded-t-lg border border-b-0 border-border">
         <span className="text-xs text-muted-foreground font-mono truncate">
           {language || "plaintext"}
@@ -96,10 +96,10 @@ const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
   const { cleanContent, contacts } = useMemo(() => parseContactCards(content), [content]);
   
   return (
-    <div className={cn("prose prose-sm dark:prose-invert max-w-full w-full overflow-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-pre:max-w-full prose-pre:overflow-x-auto", className)}>
+    <div className={cn("prose prose-sm dark:prose-invert max-w-full w-full overflow-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-pre:max-w-full prose-pre:overflow-x-auto", className)} style={{ maxWidth: '100%' }}>
       {/* Render any contact cards */}
       {contacts.map(({ id, contact }) => (
-        <ContactCard key={id} contact={contact as never} className="my-4" />
+        <ContactCard key={id} contact={contact as never} className="my-3 sm:my-4" />
       ))}
       
       {/* Render markdown content */}
@@ -189,7 +189,7 @@ const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
           ),
           // Tables
           table: ({ children }) => (
-            <div className="my-4 w-full overflow-hidden rounded-lg border border-border" style={{ maxWidth: 'calc(100vw - 4rem)' }}>
+            <div className="my-3 sm:my-4 w-full overflow-hidden rounded-lg border border-border max-w-full">
               <div className="overflow-x-auto">
                 <table className="min-w-full border-collapse text-xs sm:text-sm whitespace-nowrap">
                   {children}
