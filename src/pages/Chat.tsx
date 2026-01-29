@@ -5,6 +5,32 @@ import MessageInput from "@/components/chat/MessageInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
+// Keywords that suggest a business card scan request
+const SCAN_KEYWORDS = [
+  'scan', 'business card', 'contact', 'extract', 'read this card',
+  'add this contact', 'save this contact', 'who is this', 'add contact'
+];
+
+const isScanRequest = (message: string, hasImage: boolean): boolean => {
+  if (!hasImage) return false;
+  const lowerMessage = message.toLowerCase();
+  return SCAN_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
+};
+
+const fileToBase64 = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      // Remove data URL prefix to get pure base64
+      const base64 = result.split(',')[1];
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
 const Chat = () => {
   const {
     messages,
@@ -13,32 +39,70 @@ const Chat = () => {
   } = useConversationContext();
 
   const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
-    if (!content.trim()) return;
+    if (!content.trim() && (!files || files.length === 0)) return;
 
     try {
+      // Check if this is a business card scan request
+      const imageFile = files?.find(f => f.type.startsWith('image/'));
+      const shouldScan = isScanRequest(content, !!imageFile);
+
       // Add user message
-      const userMessage = await addMessage(content, 'user');
+      const userMessage = await addMessage(content || "Scan this business card", 'user');
       setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
 
-      // Build conversation history for context
-      const conversationHistory = messages.map(msg => ({
-        role: msg.role,
-        content: msg.content,
-      }));
+      if (shouldScan && imageFile) {
+        // Handle business card scanning
+        toast.info("Scanning business card...");
+        
+        const imageBase64 = await fileToBase64(imageFile);
+        
+        const { data, error } = await supabase.functions.invoke('scan-business-card', {
+          body: {
+            imageBase64,
+            fileName: imageFile.name,
+          },
+        });
 
-      const { data, error } = await supabase.functions.invoke('clawdbot-chat', {
-        body: {
-          message: content,
-          conversationHistory,
-        },
-      });
+        if (error) throw error;
 
-      if (error) throw error;
+        if (data?.success && data?.contact) {
+          // Format contact as a nice response with special marker
+          const contact = data.contact;
+          const contactName = [contact.first_name, contact.last_name].filter(Boolean).join(' ') || 'Contact';
+          
+          const responseMessage = `I've scanned the business card and saved the contact:
 
-      if (data?.response) {
-        await addMessage(data.response, 'assistant');
-      } else if (data?.error) {
-        toast.error(data.error);
+<!-- CONTACT_CARD:${JSON.stringify(contact)} -->
+
+**${contactName}** has been added to your contacts!`;
+
+          await addMessage(responseMessage, 'assistant');
+        } else if (data?.error) {
+          await addMessage(`I couldn't scan that business card: ${data.error}`, 'assistant');
+        } else {
+          await addMessage("I had trouble extracting information from that image. Please try with a clearer photo.", 'assistant');
+        }
+      } else {
+        // Regular chat flow
+        const conversationHistory = messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        }));
+
+        const { data, error } = await supabase.functions.invoke('clawdbot-chat', {
+          body: {
+            message: content,
+            conversationHistory,
+          },
+        });
+
+        if (error) throw error;
+
+        if (data?.response) {
+          await addMessage(data.response, 'assistant');
+        } else if (data?.error) {
+          toast.error(data.error);
+        }
       }
     } catch (error) {
       console.error('Chat error:', error);
@@ -51,7 +115,6 @@ const Chat = () => {
   }, [handleSendMessage]);
 
   const handleRetry = useCallback((messageId: string) => {
-    // Find the message and resend
     const message = messages.find(m => m.id === messageId);
     if (message && message.role === 'user') {
       handleSendMessage(message.content);

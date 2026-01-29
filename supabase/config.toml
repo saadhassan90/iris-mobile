@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.elevenlabs-tts]
 verify_jwt = false
+
+[functions.scan-business-card]
+verify_jwt = false
+
+[functions.elevenlabs-scribe-token]
+verify_jwt = false
