@@ -1,128 +1,143 @@
 
 
-# ElevenLabs "Talk to Iris" Voice Agent Integration
+# Hold-to-Talk Voice Input Feature
 
-This plan integrates the ElevenLabs Conversational AI SDK to create a real-time voice experience on the "Talk to Iris" page, mirroring the ElevenLabs "Talk to Agent" UI.
-
----
-
-## Configuration
-
-| Setting | Value |
-|---------|-------|
-| **Agent ID** | `agent_6901kf76kat3e6m9y7tmn3g76yea` |
-| **API Key** | `ELEVENLABS_API_KEY` (already connected) |
+This plan adds a WhatsApp-style voice input button to the chat input area. Hold the button to record, release to transcribe and send, or swipe left to cancel.
 
 ---
 
 ## User Experience
 
 ```text
-TEXT MODE (Default)                 VOICE MODE (Active Call)
+IDLE STATE                          RECORDING STATE
 +---------------------------+       +---------------------------+
-|     Chat Messages         |       |                           |
-|     (scrollable)          |       |   [Audio-Reactive Orb]    |
-|                           |       |                           |
-|                           |       |    "Listening..." or      |
-|                           |       |    "Iris is speaking..."  |
-|                           |       |                           |
+| [+] [___input___] [⬆][🎤] |  -->  | [◀ Swipe to cancel] [🔴] |
 +---------------------------+       +---------------------------+
-| [Text input] [Mic] [Send] |       |      [End Call Button]    |
-+---------------------------+       +---------------------------+
+                                          Hold and speak...
+                                    
+                                    RELEASE: Send transcribed text
+                                    SWIPE LEFT: Cancel recording
 ```
 
-**Voice Flow:**
-1. User taps microphone button
-2. Microphone permission requested
-3. Edge function generates WebRTC token
-4. Real-time conversation with Iris begins
-5. Transcriptions appear in chat thread
-6. User can end call anytime and continue via text
+**Interaction Flow:**
+1. User presses and holds the microphone button
+2. Microphone permission requested (if not already granted)
+3. Recording starts with visual feedback (red pulsing indicator)
+4. Live partial transcription shown above input area
+5. **Release** → Final transcription sent as chat message
+6. **Swipe left** → Recording cancelled, no message sent
+
+---
+
+## Technical Approach
+
+### Speech-to-Text Integration
+
+The project already has ElevenLabs Scribe v2 integration set up:
+- Edge function exists: `elevenlabs-scribe-token`
+- `@elevenlabs/react` package already installed
+- `ELEVENLABS_API_KEY` secret configured
+
+We'll reuse the existing Scribe infrastructure but create a new hook specifically for this dictation use case (simpler than the full voice agent flow).
 
 ---
 
 ## Implementation Steps
 
-### Step 1: Install ElevenLabs React SDK
+### Step 1: Create Dictation Hook
 
-Add the `@elevenlabs/react` package to enable the `useConversation` hook for WebRTC-based voice conversations.
+**New File:** `src/hooks/useDictation.ts`
 
-### Step 2: Create Token Generation Edge Function
+A focused hook for hold-to-talk transcription:
+- Connects to ElevenLabs Scribe v2 on press
+- Streams partial transcripts in real-time
+- Returns final committed transcript on release
+- Handles microphone permissions and errors
+- Tracks recording state for UI feedback
 
-**New File:** `supabase/functions/elevenlabs-conversation-token/index.ts`
+Key functionality:
+- `startRecording()` - Begin capturing audio and streaming to Scribe
+- `stopRecording()` - Disconnect and return final transcript
+- `cancelRecording()` - Disconnect without returning transcript
+- `isRecording` - Boolean state for UI
+- `partialTranscript` - Live preview text
 
-Secure endpoint that:
-- Receives requests from the client
-- Uses `ELEVENLABS_API_KEY` to call ElevenLabs API
-- Returns a single-use WebRTC conversation token
-- Handles CORS for browser requests
+### Step 2: Create Voice Input UI Component
 
-### Step 3: Create Voice Agent Hook
+**New File:** `src/components/chat/VoiceInputButton.tsx`
 
-**New File:** `src/hooks/useIrisVoice.ts`
+A standalone component handling the hold-to-talk interaction:
+- Touch/pointer event handling for hold gestures
+- Swipe-left detection for cancellation (threshold ~80px)
+- Visual states:
+  - **Idle**: Standard mic icon button
+  - **Recording**: Red pulsing indicator with slide-to-cancel hint
+  - **Transcribing**: Brief loading state before send
+- Haptic feedback via navigator.vibrate (where supported)
 
-Custom hook wrapping `useConversation` that:
-- Manages connection state (idle, connecting, connected)
-- Handles microphone permission requests
-- Fetches tokens from edge function
-- Processes transcription events to add messages to chat
-- Exposes audio levels for orb visualization
-- Provides `startCall()` and `endCall()` methods
+### Step 3: Create Recording Overlay
 
-### Step 4: Enhance Voice Orb Component
+**New File:** `src/components/chat/RecordingOverlay.tsx`
 
-**Modified File:** `src/components/voice/VoiceOrb.tsx`
+Overlay shown during recording:
+- Displayed above the input area when recording
+- Shows partial transcript in real-time
+- "Slide to cancel" indicator with arrow
+- Recording duration timer
+- Red recording pulse animation
 
-Add real-time audio visualization:
-- Accept `inputVolume` and `outputVolume` props
-- Scale orb size based on voice activity levels
-- Smooth animations using CSS transitions
-- Different visual states for user speaking vs Iris speaking
-
-### Step 5: Refactor Talk to Iris Page
-
-**Modified File:** `src/pages/VoiceChat.tsx`
-
-Two-mode interface:
-- **Text Mode**: Current chat interface with mic button
-- **Voice Mode**: Full-screen orb with end call button
-- Automatic new conversation creation when voice session starts
-- Real-time transcription integration
-- Seamless switching between modes
-
-### Step 6: Update Message Input
+### Step 4: Integrate into MessageInput
 
 **Modified File:** `src/components/chat/MessageInput.tsx`
 
-Enhanced mic button behavior:
-- Starts voice session via `useIrisVoice` hook
-- Visual feedback during connection
-- Disabled state during active voice session
+Changes:
+- Add `VoiceInputButton` next to the send button
+- Show `RecordingOverlay` when recording is active
+- Pass `onSendMessage` callback to send transcribed text
+- Manage recording state at the component level
+
+Layout adjustment:
+```text
+CURRENT:  [+] [input field with ⬆] [🎤 optional]
+UPDATED:  [+] [input field with ⬆] [🎤 always]
+```
+
+The mic button will be always visible (not conditionally rendered based on `onVoiceClick`).
 
 ---
 
-## Architecture
+## Component Architecture
 
 ```text
-+------------------+     WebRTC      +------------------+
-|   React Client   | <-------------> |  ElevenLabs API  |
-|  useConversation |                 |  (Iris Agent)    |
-+------------------+                 +------------------+
-        |
-        | POST /elevenlabs-conversation-token
-        v
-+------------------+
-| Supabase Edge    |
-| Function         |
-+------------------+
-        |
-        | Uses ELEVENLABS_API_KEY
-        v
-+------------------+
-| ElevenLabs API   |
-| /convai/conversation/token
-+------------------+
+MessageInput
+├── VoiceInputButton (new)
+│   └── useDictation hook (new)
+└── RecordingOverlay (new)
+    └── Displays partialTranscript
+    └── Swipe-to-cancel indicator
 ```
+
+---
+
+## Gesture Handling Details
+
+### Hold-to-Talk Logic
+
+```typescript
+// Pointer events for cross-platform support
+onPointerDown → Start recording, track start position
+onPointerMove → If deltaX < -80px while recording → show cancel state
+onPointerUp → If in cancel zone → cancelRecording(), else → sendTranscript()
+onPointerLeave → If recording → treat as release (send)
+```
+
+### Cancel Swipe Detection
+
+- Track initial touch/pointer X position
+- Calculate horizontal delta during move
+- Threshold: -80px (swipe left)
+- Visual feedback: Button slides left, cancel text appears
+- Release in cancel zone discards recording
 
 ---
 
@@ -132,87 +147,57 @@ Enhanced mic button behavior:
 
 | File | Purpose |
 |------|---------|
-| `supabase/functions/elevenlabs-conversation-token/index.ts` | Secure token generation |
-| `src/hooks/useIrisVoice.ts` | Voice conversation management |
+| `src/hooks/useDictation.ts` | Scribe-based hold-to-talk transcription |
+| `src/components/chat/VoiceInputButton.tsx` | Hold/release/swipe gesture button |
+| `src/components/chat/RecordingOverlay.tsx` | Recording status + partial transcript display |
 
 ### Modified Files
 
 | File | Changes |
 |------|---------|
-| `src/pages/VoiceChat.tsx` | Two-mode UI, real voice integration |
-| `src/components/voice/VoiceOrb.tsx` | Audio-reactive visualization |
-| `src/components/chat/MessageInput.tsx` | Voice session trigger |
-
-### New Dependency
-
-| Package | Version |
-|---------|---------|
-| `@elevenlabs/react` | Latest |
+| `src/components/chat/MessageInput.tsx` | Integrate VoiceInputButton, show overlay |
 
 ---
 
-## Technical Details
+## Visual Design
 
-### Token Generation Edge Function
+### Recording States
 
-```typescript
-// Key logic
-const response = await fetch(
-  `https://api.elevenlabs.io/v1/convai/conversation/token?agent_id=${AGENT_ID}`,
-  {
-    headers: { "xi-api-key": ELEVENLABS_API_KEY }
-  }
-);
-const { token } = await response.json();
+| State | Visual |
+|-------|--------|
+| Idle | Gray mic icon button |
+| Recording | Red pulsing mic, "Slide to cancel ◀" text appears |
+| Cancel Zone | Button slides left, red X icon, "Release to cancel" |
+| Processing | Brief spinner before message sends |
+
+### Recording Overlay
+
+```text
+┌─────────────────────────────────┐
+│  "Hello, I want to schedule..." │  ← Partial transcript
+│                                 │
+│  ◀ Slide to cancel    ● 0:03   │  ← Controls
+└─────────────────────────────────┘
 ```
-
-### Voice Hook Integration
-
-```typescript
-// Key callbacks
-const conversation = useConversation({
-  onConnect: () => { /* Set voice mode active */ },
-  onDisconnect: () => { /* Return to text mode */ },
-  onMessage: (message) => {
-    if (message.type === "user_transcript") {
-      addMessage(message.user_transcription_event.user_transcript, 'user');
-    }
-    if (message.type === "agent_response") {
-      addMessage(message.agent_response_event.agent_response, 'assistant');
-    }
-  }
-});
-```
-
-### Audio-Reactive Orb
-
-```typescript
-// Real-time visualization
-const inputLevel = conversation.getInputVolume();   // User speaking
-const outputLevel = conversation.getOutputVolume(); // Iris speaking
-const scale = 1 + Math.max(inputLevel, outputLevel) * 0.3;
-```
-
----
-
-## Chat Integration
-
-All voice interactions sync with the existing conversation system:
-
-- **New voice session** → Creates new conversation if none active
-- **User speech** → Transcribed → Added as user message with "transferred" status
-- **Iris response** → Added as assistant message
-- **End call** → Continue conversation via text
-- **Persisted** → All messages saved to localStorage
 
 ---
 
 ## Error Handling
 
-| Scenario | User Experience |
-|----------|-----------------|
-| Microphone denied | Toast: "Microphone access required" |
-| Token fetch failed | Toast: "Connection failed, please retry" |
-| Connection dropped | Auto-return to text mode + toast notification |
-| Agent unavailable | Toast: "Iris is currently unavailable" |
+| Scenario | Behavior |
+|----------|----------|
+| Microphone denied | Toast: "Microphone access required for voice input" |
+| Token fetch failed | Toast: "Voice unavailable, please type instead" |
+| Scribe connection lost | Auto-cancel, toast notification |
+| Empty transcript | Don't send, show brief "No speech detected" |
+
+---
+
+## Technical Notes
+
+- Uses ElevenLabs Scribe v2 (`scribe_v2_realtime`) with VAD commit strategy
+- Token fetched from existing `elevenlabs-scribe-token` edge function
+- Recording auto-commits via Voice Activity Detection (silence detection)
+- Maximum recording duration: 60 seconds (auto-stop with warning)
+- Supports both touch (mobile) and mouse (desktop) interactions
 
