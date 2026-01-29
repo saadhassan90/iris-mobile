@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { User, Mail, Phone, Building2, Briefcase, Globe, MapPin, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,7 @@ interface ContactCardProps {
   className?: string;
 }
 
-const ContactCard = ({ contact, className }: ContactCardProps) => {
+const ContactCard = forwardRef<HTMLDivElement, ContactCardProps>(({ contact, className }, ref) => {
   const fullName = [contact.first_name, contact.last_name].filter(Boolean).join(" ");
   
   const fields = [
@@ -33,7 +34,7 @@ const ContactCard = ({ contact, className }: ContactCardProps) => {
   ].filter(field => field.value);
 
   return (
-    <Card className={cn("bg-card/50 border-border/50 overflow-hidden", className)}>
+    <Card ref={ref} className={cn("bg-card/50 border-border/50 overflow-hidden", className)}>
       <CardContent className="p-4">
         {/* Header with name */}
         {fullName && (
@@ -99,6 +100,8 @@ const ContactCard = ({ contact, className }: ContactCardProps) => {
       </CardContent>
     </Card>
   );
-};
+});
+
+ContactCard.displayName = "ContactCard";
 
 export default ContactCard;
