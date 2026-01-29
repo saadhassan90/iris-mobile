@@ -11,7 +11,7 @@ interface ChatHeaderProps {
 
 const ChatHeader = ({ onMenuClick, onVoiceClick, isVoiceActive = false, title = "ChatGPT" }: ChatHeaderProps) => {
   return (
-    <header className="sticky top-0 z-50 flex h-14 items-center justify-between px-4 bg-background border-b border-border">
+    <header className="sticky top-0 z-50 flex h-14 shrink-0 items-center justify-between px-3 sm:px-4 bg-background border-b border-border w-full max-w-full overflow-hidden">
       <div className="flex items-center gap-3">
         <Button
           variant="outline"
