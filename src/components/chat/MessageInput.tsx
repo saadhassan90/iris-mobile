@@ -1,8 +1,11 @@
-import { useState, useRef } from "react";
-import { Plus, ArrowUp, X, FileText, Image, Film, Music, Mic, MicOff, Loader2 } from "lucide-react";
+import { useState, useRef, useCallback } from "react";
+import { Plus, ArrowUp, X, FileText, Image, Film, Music } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useDictation } from "@/hooks/useDictation";
+import VoiceInputButton from "./VoiceInputButton";
+import RecordingOverlay from "./RecordingOverlay";
 
 interface AttachedFile {
   id: string;
@@ -14,9 +17,6 @@ interface MessageInputProps {
   onSendMessage: (content: string, files?: File[]) => void;
   disabled?: boolean;
   placeholder?: string;
-  onVoiceClick?: () => void;
-  isVoiceActive?: boolean;
-  voiceConnecting?: boolean;
 }
 
 const getFileIcon = (type: string) => {
@@ -30,14 +30,29 @@ const MessageInput = ({
   onSendMessage,
   disabled = false,
   placeholder = "Ask ChatGPT",
-  onVoiceClick,
-  isVoiceActive = false,
-  voiceConnecting = false,
 }: MessageInputProps) => {
   const [textInput, setTextInput] = useState("");
   const [attachedFiles, setAttachedFiles] = useState<AttachedFile[]>([]);
+  const [isInCancelZone, setIsInCancelZone] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Voice dictation hook
+  const handleTranscript = useCallback((transcript: string) => {
+    if (transcript.trim()) {
+      onSendMessage(transcript.trim());
+    }
+  }, [onSendMessage]);
+
+  const {
+    isRecording,
+    isConnecting,
+    partialTranscript,
+    committedTranscript,
+    startRecording,
+    stopRecording,
+    cancelRecording,
+  } = useDictation({ onTranscript: handleTranscript });
 
   const hasContent = textInput.trim().length > 0 || attachedFiles.length > 0;
 
@@ -57,7 +72,6 @@ const MessageInput = ({
       handleSend();
     }
   };
-
 
   const handlePlusClick = () => {
     fileInputRef.current?.click();
@@ -100,9 +114,29 @@ const MessageInput = ({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const handleStartRecording = useCallback(async () => {
+    try {
+      await startRecording();
+    } catch {
+      // Error already handled in hook with toast
+    }
+  }, [startRecording]);
+
+  const handleStopRecording = useCallback(() => {
+    stopRecording();
+  }, [stopRecording]);
+
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 bg-background px-4 pb-6 pt-2">
       <div className="mx-auto max-w-2xl">
+        {/* Recording overlay */}
+        <RecordingOverlay
+          isVisible={isRecording}
+          partialTranscript={partialTranscript}
+          committedTranscript={committedTranscript}
+          isInCancelZone={isInCancelZone}
+        />
+
         {/* Attached files preview */}
         {attachedFiles.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
@@ -160,7 +194,7 @@ const MessageInput = ({
             variant="ghost"
             size="icon"
             className="h-10 w-10 shrink-0 rounded-full text-muted-foreground hover:text-foreground"
-            disabled={disabled}
+            disabled={disabled || isRecording}
             onClick={handlePlusClick}
           >
             <Plus className="h-6 w-6" />
@@ -168,14 +202,14 @@ const MessageInput = ({
 
           {/* Input field */}
           <div className="relative flex-1">
-          <Input
+            <Input
               ref={inputRef}
               type="text"
               placeholder={placeholder}
               value={textInput}
               onChange={(e) => setTextInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={disabled}
+              disabled={disabled || isRecording}
               className="h-12 rounded-full border-border bg-muted/50 pl-4 pr-14 text-base placeholder:text-muted-foreground"
             />
 
@@ -190,31 +224,22 @@ const MessageInput = ({
                     : "bg-muted text-muted-foreground cursor-not-allowed opacity-50"
                 )}
                 onClick={handleSend}
-                disabled={disabled || !hasContent}
+                disabled={disabled || !hasContent || isRecording}
               >
                 <ArrowUp className="h-4 w-4" />
               </Button>
             </div>
           </div>
 
-          {/* Microphone button */}
-          {onVoiceClick && (
-            <Button
-              variant={isVoiceActive ? "destructive" : "default"}
-              size="icon"
-              className="h-10 w-10 shrink-0 rounded-full"
-              onClick={onVoiceClick}
-              disabled={disabled || voiceConnecting}
-            >
-              {voiceConnecting ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : isVoiceActive ? (
-                <MicOff className="h-5 w-5" />
-              ) : (
-                <Mic className="h-5 w-5" />
-              )}
-            </Button>
-          )}
+          {/* Voice input button */}
+          <VoiceInputButton
+            isRecording={isRecording}
+            isConnecting={isConnecting}
+            onStartRecording={handleStartRecording}
+            onStopRecording={handleStopRecording}
+            onCancelRecording={cancelRecording}
+            disabled={disabled}
+          />
         </div>
       </div>
     </div>
