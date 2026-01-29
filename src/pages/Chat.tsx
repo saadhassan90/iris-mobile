@@ -5,16 +5,9 @@ import MessageInput from "@/components/chat/MessageInput";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
-// Keywords that suggest a business card scan request
-const SCAN_KEYWORDS = [
-  'scan', 'business card', 'contact', 'extract', 'read this card',
-  'add this contact', 'save this contact', 'who is this', 'add contact'
-];
-
-const isScanRequest = (message: string, hasImage: boolean): boolean => {
-  if (!hasImage) return false;
-  const lowerMessage = message.toLowerCase();
-  return SCAN_KEYWORDS.some(keyword => lowerMessage.includes(keyword));
+// Any image attachment is treated as a business card scan
+const shouldTriggerScan = (hasImage: boolean): boolean => {
+  return hasImage;
 };
 
 const fileToBase64 = (file: File): Promise<string> => {
@@ -42,12 +35,13 @@ const Chat = () => {
     if (!content.trim() && (!files || files.length === 0)) return;
 
     try {
-      // Check if this is a business card scan request
+      // Check if this is a business card scan request (any image triggers scan)
       const imageFile = files?.find(f => f.type.startsWith('image/'));
-      const shouldScan = isScanRequest(content, !!imageFile);
+      const shouldScan = shouldTriggerScan(!!imageFile);
 
-      // Add user message
-      const userMessage = await addMessage(content || "Scan this business card", 'user');
+      // Add user message - default to scan prompt if only image attached
+      const messageContent = content.trim() || (imageFile ? "Scan this business card" : "");
+      const userMessage = await addMessage(messageContent, 'user');
       setTimeout(() => updateMessageStatus(userMessage.id, 'transferred'), 300);
 
       if (shouldScan && imageFile) {
