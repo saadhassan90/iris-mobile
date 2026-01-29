@@ -55,13 +55,13 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
   }
 
   return (
-    <div className="relative flex-1 min-h-0 overflow-hidden">
+    <div className="relative flex-1 min-h-0 overflow-hidden w-full">
       <ScrollArea 
-        className="h-full"
+        className="h-full w-full"
         ref={scrollRef}
         onScrollCapture={handleScroll}
       >
-        <div className="flex flex-col divide-y divide-border pb-24">
+        <div className="flex flex-col divide-y divide-border pb-24 w-full overflow-hidden">
           {messages.map((message) => (
             <MessageBubble
               key={message.id}
@@ -71,11 +71,11 @@ const ChatThread = ({ messages, isLoading, onRetry, onSuggestionClick }: ChatThr
           ))}
           
           {isLoading && (
-            <div className="flex w-full animate-fade-in gap-4 py-4 bg-muted/30">
-              <div className="w-full max-w-3xl mx-auto px-4">
-                <div className="flex gap-4">
-                  <div className="h-7 w-7 rounded-full bg-muted animate-pulse shrink-0" />
-                  <div className="flex-1 space-y-2">
+            <div className="flex w-full animate-fade-in gap-3 sm:gap-4 py-3 sm:py-4 bg-muted/30">
+              <div className="w-full max-w-3xl mx-auto px-3 sm:px-4">
+                <div className="flex gap-2 sm:gap-3">
+                  <div className="h-6 w-6 sm:h-7 sm:w-7 rounded-full bg-muted animate-pulse shrink-0" />
+                  <div className="flex-1 min-w-0 space-y-1.5 sm:space-y-2">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-medium text-foreground">Iris</span>
                     </div>

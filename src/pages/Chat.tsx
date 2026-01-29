@@ -144,7 +144,7 @@ const Chat = () => {
   }, [messages, handleSendMessage]);
 
   return (
-    <div className="flex flex-1 flex-col h-full min-h-0">
+    <div className="flex flex-1 flex-col h-full min-h-0 w-full overflow-hidden">
       <ChatThread
         messages={messages}
         onRetry={handleRetry}
