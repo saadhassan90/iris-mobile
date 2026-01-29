@@ -32,12 +32,22 @@ const Chat = () => {
   } = useConversationContext();
 
   const handleSendMessage = useCallback(async (content: string, files?: File[]) => {
+    // Debug log to trace file passing
+    console.log('[Chat] handleSendMessage called', { 
+      content, 
+      hasFiles: !!files, 
+      fileCount: files?.length,
+      fileTypes: files?.map(f => f.type)
+    });
+
     if (!content.trim() && (!files || files.length === 0)) return;
 
     try {
       // Check if this is a business card scan request (any image triggers scan)
       const imageFile = files?.find(f => f.type.startsWith('image/'));
       const shouldScan = shouldTriggerScan(!!imageFile);
+      
+      console.log('[Chat] Scan detection', { imageFile: imageFile?.name, shouldScan });
 
       // Add user message - default to scan prompt if only image attached
       const messageContent = content.trim() || (imageFile ? "Scan this business card" : "");
@@ -47,9 +57,12 @@ const Chat = () => {
       if (shouldScan && imageFile) {
         // Handle business card scanning
         toast.info("Scanning business card...");
+        console.log('[Chat] Starting image conversion to base64');
         
         const imageBase64 = await fileToBase64(imageFile);
+        console.log('[Chat] Image converted, base64 length:', imageBase64.length);
         
+        console.log('[Chat] Invoking scan-business-card function');
         const { data, error } = await supabase.functions.invoke('scan-business-card', {
           body: {
             imageBase64,
@@ -57,7 +70,12 @@ const Chat = () => {
           },
         });
 
-        if (error) throw error;
+        console.log('[Chat] Scan result', { data, error });
+
+        if (error) {
+          console.error('[Chat] Scan function error:', error);
+          throw error;
+        }
 
         if (data?.success && data?.contact) {
           // Format contact as a nice response with special marker

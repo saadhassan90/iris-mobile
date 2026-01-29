@@ -57,11 +57,22 @@ const MessageInput = ({
   const hasContent = textInput.trim().length > 0 || attachedFiles.length > 0;
 
   const handleSend = () => {
-    if ((!textInput.trim() && attachedFiles.length === 0) || disabled) return;
-    onSendMessage(
-      textInput.trim(),
-      attachedFiles.length > 0 ? attachedFiles.map((f) => f.file) : undefined
-    );
+    console.log('[MessageInput] handleSend called', {
+      textInput: textInput.trim(),
+      attachedFilesCount: attachedFiles.length,
+      attachedFileNames: attachedFiles.map(f => f.file.name),
+      attachedFileTypes: attachedFiles.map(f => f.file.type),
+    });
+    
+    if ((!textInput.trim() && attachedFiles.length === 0) || disabled) {
+      console.log('[MessageInput] Send blocked - no content or disabled');
+      return;
+    }
+    
+    const filesToSend = attachedFiles.length > 0 ? attachedFiles.map((f) => f.file) : undefined;
+    console.log('[MessageInput] Calling onSendMessage with files:', filesToSend?.length);
+    
+    onSendMessage(textInput.trim(), filesToSend);
     setTextInput("");
     setAttachedFiles([]);
   };
@@ -79,6 +90,11 @@ const MessageInput = ({
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
+    console.log('[MessageInput] handleFileChange', { 
+      fileCount: files?.length, 
+      fileNames: files ? Array.from(files).map(f => f.name) : [] 
+    });
+    
     if (!files) return;
 
     const newFiles: AttachedFile[] = Array.from(files).map((file) => {
@@ -90,10 +106,15 @@ const MessageInput = ({
         preview = URL.createObjectURL(file);
       }
 
+      console.log('[MessageInput] Adding file:', { name: file.name, type: file.type, size: file.size });
       return { id, file, preview };
     });
 
-    setAttachedFiles((prev) => [...prev, ...newFiles]);
+    setAttachedFiles((prev) => {
+      const updated = [...prev, ...newFiles];
+      console.log('[MessageInput] attachedFiles updated, count:', updated.length);
+      return updated;
+    });
     // Reset file input
     e.target.value = "";
   };
