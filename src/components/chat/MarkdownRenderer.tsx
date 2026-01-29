@@ -3,13 +3,34 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Copy, Check } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import ContactCard from "./ContactCard";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
 }
+
+// Parse contact card markers from content
+const parseContactCards = (content: string): { cleanContent: string; contacts: Array<{ id: string; contact: unknown }> } => {
+  const contactPattern = /<!-- CONTACT_CARD:(.*?) -->/g;
+  const contacts: Array<{ id: string; contact: unknown }> = [];
+  let match;
+  let index = 0;
+  
+  while ((match = contactPattern.exec(content)) !== null) {
+    try {
+      const contact = JSON.parse(match[1]);
+      contacts.push({ id: `contact-${index++}`, contact });
+    } catch {
+      // Invalid JSON, skip
+    }
+  }
+  
+  const cleanContent = content.replace(contactPattern, '').trim();
+  return { cleanContent, contacts };
+};
 
 const CodeBlock = ({ language, children }: { language: string; children: string }) => {
   const [copied, setCopied] = useState(false);
@@ -72,11 +93,20 @@ const CodeBlock = ({ language, children }: { language: string; children: string 
 };
 
 const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
+  const { cleanContent, contacts } = useMemo(() => parseContactCards(content), [content]);
+  
   return (
     <div className={cn("prose prose-sm dark:prose-invert max-w-full w-full overflow-hidden break-words prose-headings:text-foreground prose-p:text-foreground prose-pre:max-w-full prose-pre:overflow-x-auto", className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
+      {/* Render any contact cards */}
+      {contacts.map(({ id, contact }) => (
+        <ContactCard key={id} contact={contact as never} className="my-4" />
+      ))}
+      
+      {/* Render markdown content */}
+      {cleanContent && (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
           // Code blocks
           code({ node, className, children, ...props }) {
             const match = /language-(\w+)/.exec(className || "");
@@ -183,8 +213,9 @@ const MarkdownRenderer = ({ content, className }: MarkdownRendererProps) => {
           ),
         }}
       >
-        {content}
+        {cleanContent}
       </ReactMarkdown>
+      )}
     </div>
   );
 };
