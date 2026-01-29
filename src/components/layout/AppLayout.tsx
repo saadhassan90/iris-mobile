@@ -35,7 +35,7 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
 
   return (
     <ConversationContext.Provider value={conversationState}>
-      <div className="flex min-h-screen flex-col bg-background">
+      <div className="flex h-screen max-h-screen w-screen max-w-full flex-col bg-background overflow-hidden">
         <ChatHeader onMenuClick={() => setMenuOpen(true)} title={title} />
         <MobileNav 
           open={menuOpen} 
@@ -46,7 +46,7 @@ const AppLayout = ({ children, title }: AppLayoutProps) => {
           onNewConversation={createConversation}
           onDeleteConversation={deleteConversation}
         />
-        <main className="flex flex-1 flex-col">{children}</main>
+        <main className="flex flex-1 flex-col min-h-0 overflow-hidden">{children}</main>
       </div>
     </ConversationContext.Provider>
   );

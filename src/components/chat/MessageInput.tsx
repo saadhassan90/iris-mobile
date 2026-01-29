@@ -148,8 +148,8 @@ const MessageInput = ({
   }, [stopRecording]);
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background px-4 pb-6 pt-2">
-      <div className="mx-auto max-w-2xl">
+    <div className="fixed bottom-0 left-0 right-0 z-50 bg-background px-3 sm:px-4 pb-6 pt-2 w-full max-w-full overflow-hidden">
+      <div className="mx-auto max-w-2xl w-full">
         {/* Recording overlay */}
         <RecordingOverlay
           isVisible={isRecording}
