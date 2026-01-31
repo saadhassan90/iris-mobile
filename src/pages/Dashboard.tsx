@@ -26,33 +26,36 @@ const Dashboard = () => {
     <div className="flex flex-1 flex-col min-h-0">
       {/* Fixed header section */}
       <div className="flex-shrink-0 p-4 pb-0 space-y-4">
-        {/* Header with add task and sync buttons */}
-        <div className="flex gap-2">
-          <Button
-            className="flex-1 rounded-full gap-2"
-            onClick={() => setIsCreateOpen(true)}
-          >
-            <Plus className="h-4 w-4" />
-            Add New Task
-          </Button>
-          <Button
-            variant="outline"
-            size="icon"
-            className="rounded-full"
-            onClick={syncWithNotion}
-            disabled={isSyncing}
-          >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-
         {/* View toggle */}
         <div className="flex justify-center">
           <ViewToggle view={view} onViewChange={setView} />
         </div>
 
-        {/* Filters */}
-        <TaskFilters filters={filters} onFiltersChange={setFilters} />
+        {/* Filters with action buttons */}
+        <TaskFilters 
+          filters={filters} 
+          onFiltersChange={setFilters}
+          actions={
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button
+                variant="outline"
+                size="icon"
+                className="rounded-full h-9 w-9"
+                onClick={syncWithNotion}
+                disabled={isSyncing}
+              >
+                <RefreshCw className={`h-4 w-4 ${isSyncing ? "animate-spin" : ""}`} />
+              </Button>
+              <Button
+                className="rounded-full gap-2"
+                onClick={() => setIsCreateOpen(true)}
+              >
+                <Plus className="h-4 w-4" />
+                New
+              </Button>
+            </div>
+          }
+        />
       </div>
 
       {/* Scrollable content area */}
