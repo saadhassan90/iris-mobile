@@ -1,8 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import {
+  NotionStatus,
+  NOTION_STATUSES,
+  getDefaultStatus,
+  isValidStatus,
+} from "@/lib/statusConfig";
 
-export type TaskStatus = "uncategorized" | "todo" | "in_progress" | "done";
+export type TaskStatus = NotionStatus;
 
 export type TaskSource = "voice" | "manual" | "email" | "fireflies" | "notion" | "other";
 
@@ -37,7 +43,7 @@ interface DbTask {
 const mapDbTaskToTask = (dbTask: DbTask): Task => ({
   id: dbTask.id,
   title: dbTask.title,
-  status: dbTask.status as TaskStatus,
+  status: isValidStatus(dbTask.status) ? dbTask.status : NOTION_STATUSES.UNCATEGORIZED,
   source: dbTask.source as TaskSource,
   createdAt: dbTask.created_at ? new Date(dbTask.created_at) : new Date(),
   dueDate: dbTask.due_date ? new Date(dbTask.due_date) : undefined,
@@ -174,7 +180,7 @@ export const useTasks = () => {
     try {
       const newTaskData = {
         title,
-        status: source === "manual" ? "todo" : "uncategorized",
+        status: getDefaultStatus(source),
         source,
         due_date: dueDate?.toISOString() || null,
         user_id: "saad",

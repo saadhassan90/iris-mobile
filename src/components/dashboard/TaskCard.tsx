@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { NOTION_STATUSES, STATUS_LABELS, STATUS_COLORS } from "@/lib/statusConfig";
 
 interface TaskCardProps {
   task: Task;
@@ -14,18 +15,12 @@ interface TaskCardProps {
   draggable?: boolean;
 }
 
-const statusColors: Record<TaskStatus, string> = {
-  uncategorized: "bg-orange-500/20 text-orange-700 dark:text-orange-400",
-  todo: "bg-muted text-muted-foreground",
-  in_progress: "bg-primary/20 text-primary",
-  done: "bg-green-500/20 text-green-700 dark:text-green-400",
-};
-
-const statusLabels: Record<TaskStatus, string> = {
-  uncategorized: "Uncategorized",
-  todo: "To Do",
-  in_progress: "In Progress",
-  done: "Done",
+// Badge styling for status
+const statusBadgeColors: Record<TaskStatus, string> = {
+  [NOTION_STATUSES.UNCATEGORIZED]: "bg-orange-500/20 text-orange-700 dark:text-orange-400",
+  [NOTION_STATUSES.TODO]: "bg-muted text-muted-foreground",
+  [NOTION_STATUSES.IN_PROGRESS]: "bg-primary/20 text-primary",
+  [NOTION_STATUSES.DONE]: "bg-green-500/20 text-green-700 dark:text-green-400",
 };
 
 const sourceIcons: Record<TaskSource, React.ReactNode> = {
@@ -52,6 +47,9 @@ const TaskCard = ({ task, onComplete, onArchive, compact = false, draggable = fa
     e.dataTransfer.effectAllowed = "move";
   };
 
+  const statusColor = statusBadgeColors[task.status] ?? "bg-muted text-muted-foreground";
+  const statusLabel = STATUS_LABELS[task.status] ?? task.status;
+
   return (
     <Card 
       draggable={draggable}
@@ -68,9 +66,9 @@ const TaskCard = ({ task, onComplete, onArchive, compact = false, draggable = fa
             <div className="flex flex-wrap items-center gap-1.5">
               <Badge
                 variant="secondary"
-                className={cn("rounded-full text-xs", statusColors[task.status])}
+                className={cn("rounded-full text-xs", statusColor)}
               >
-                {statusLabels[task.status]}
+                {statusLabel}
               </Badge>
               <Badge
                 variant="outline"
@@ -89,7 +87,7 @@ const TaskCard = ({ task, onComplete, onArchive, compact = false, draggable = fa
           </div>
           
           <div className="flex gap-1">
-            {task.status !== "done" && onComplete && (
+            {task.status !== NOTION_STATUSES.DONE && onComplete && (
               <Button
                 variant="ghost"
                 size="icon"

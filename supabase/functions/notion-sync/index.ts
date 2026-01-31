@@ -8,22 +8,35 @@ const corsHeaders = {
 };
 
 // Notion database ID for Saad's To-Do List
-// NOTE: this must be the database's 32-char ID (not the ?v= view ID).
 const NOTION_DATABASE_ID = "14b374dfd4ed80059129fba94668d6f5";
 
-// Status mapping between app and Notion
-const statusToNotion: Record<string, string> = {
-  uncategorized: "Not Started",
-  todo: "Not Started",
-  in_progress: "In Progress",
-  done: "Complete🙌",
+// ============================================================
+// Status configuration - SINGLE SOURCE OF TRUTH
+// These MUST match exactly the status options in your Notion database
+// ============================================================
+const NOTION_STATUSES = {
+  UNCATEGORIZED: "IRIS Generated",
+  TODO: "Not Started",
+  IN_PROGRESS: "In Progress",
+  DONE: "Complete🙌",
+} as const;
+
+type NotionStatusKey = keyof typeof NOTION_STATUSES;
+type NotionStatusValue = (typeof NOTION_STATUSES)[NotionStatusKey];
+
+// All valid Notion status values
+const ALL_NOTION_STATUSES: NotionStatusValue[] = Object.values(NOTION_STATUSES);
+
+// Helper to validate status
+const isValidNotionStatus = (status: string): status is NotionStatusValue => {
+  return ALL_NOTION_STATUSES.includes(status as NotionStatusValue);
 };
 
-const statusFromNotion: Record<string, string> = {
-  "Not Started": "todo",
-  "In Progress": "in_progress",
-  "Complete🙌": "done",
-  "IRIS Generated": "uncategorized",
+// Normalize unknown statuses to UNCATEGORIZED
+const normalizeStatus = (status: string | null | undefined): NotionStatusValue => {
+  if (!status) return NOTION_STATUSES.UNCATEGORIZED;
+  if (isValidNotionStatus(status)) return status;
+  return NOTION_STATUSES.UNCATEGORIZED;
 };
 
 interface NotionPage {
@@ -88,6 +101,8 @@ async function fetchNotionTasks(): Promise<NotionPage[]> {
 }
 
 async function createNotionPage(task: Task): Promise<string> {
+  const status = normalizeStatus(task.status);
+  
   const response = await notionFetch("/pages", {
     method: "POST",
     body: JSON.stringify({
@@ -97,7 +112,7 @@ async function createNotionPage(task: Task): Promise<string> {
           title: [{ text: { content: task.title } }],
         },
         Status: {
-          select: { name: statusToNotion[task.status] || "Uncategorized" },
+          select: { name: status },
         },
       },
     }),
@@ -113,6 +128,8 @@ async function createNotionPage(task: Task): Promise<string> {
 }
 
 async function updateNotionPage(pageId: string, task: Task): Promise<void> {
+  const status = normalizeStatus(task.status);
+  
   const response = await notionFetch(`/pages/${pageId}`, {
     method: "PATCH",
     body: JSON.stringify({
@@ -121,7 +138,7 @@ async function updateNotionPage(pageId: string, task: Task): Promise<void> {
           title: [{ text: { content: task.title } }],
         },
         Status: {
-          select: { name: statusToNotion[task.status] || "Uncategorized" },
+          select: { name: status },
         },
       },
       archived: task.archived || false,
@@ -296,8 +313,10 @@ serve(async (req) => {
 
       const title =
         page.properties.Name?.title?.[0]?.plain_text || "Untitled";
-      const notionStatus = page.properties.Status?.select?.name || "Uncategorized";
-      const status = statusFromNotion[notionStatus] || "uncategorized";
+      const notionStatus = page.properties.Status?.select?.name || null;
+      
+      // Use the exact Notion status value (normalized if unknown)
+      const status = normalizeStatus(notionStatus);
 
       const existingTask = tasksByNotionId.get(page.id);
 
