@@ -56,19 +56,20 @@ const KanbanColumn = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={cn(
-        "flex h-full min-w-[280px] flex-col rounded-xl border-2 bg-card p-3 transition-colors",
+        "flex flex-col rounded-xl border-2 bg-card p-3 transition-colors w-[280px]",
+        "h-full min-h-[400px] max-h-full",
         columnColor,
         isDragOver && "bg-accent/50 border-primary"
       )}
     >
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-3 flex items-center justify-between flex-shrink-0">
         <h3 className="font-semibold">{displayTitle}</h3>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
           {filteredTasks.length}
         </span>
       </div>
       
-      <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+      <div className="flex flex-1 flex-col gap-2 overflow-y-auto min-h-0">
         {filteredTasks.length === 0 ? (
           <p className="py-8 text-center text-sm text-muted-foreground">
             {isDragOver ? "Drop here" : "No tasks"}
