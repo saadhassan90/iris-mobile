@@ -17,3 +17,9 @@ verify_jwt = false
 
 [functions.notion-sync]
 verify_jwt = false
+
+[functions.elevenlabs-init]
+verify_jwt = false
+
+[functions.elevenlabs-postcall]
+verify_jwt = false
