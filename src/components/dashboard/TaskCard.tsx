@@ -1,5 +1,5 @@
 import { format } from "date-fns";
-import { Check, Archive, Mic, Keyboard, Mail, Headphones, HelpCircle } from "lucide-react";
+import { Check, Archive, Mic, Keyboard, Mail, Headphones, HelpCircle, StickyNote } from "lucide-react";
 import { Task, TaskStatus, TaskSource } from "@/hooks/useTasks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -33,6 +33,7 @@ const sourceIcons: Record<TaskSource, React.ReactNode> = {
   manual: <Keyboard className="h-3 w-3" />,
   email: <Mail className="h-3 w-3" />,
   fireflies: <Headphones className="h-3 w-3" />,
+  notion: <StickyNote className="h-3 w-3" />,
   other: <HelpCircle className="h-3 w-3" />,
 };
 
@@ -41,6 +42,7 @@ const sourceLabels: Record<TaskSource, string> = {
   manual: "Manual",
   email: "Email",
   fireflies: "Fireflies",
+  notion: "Notion",
   other: "Other",
 };
 
