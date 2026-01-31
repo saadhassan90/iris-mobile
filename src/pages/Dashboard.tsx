@@ -6,6 +6,7 @@ import KanbanColumn from "@/components/dashboard/KanbanColumn";
 import CreateTaskSheet from "@/components/dashboard/CreateTaskSheet";
 import { Button } from "@/components/ui/button";
 import { useTasks, TaskSource } from "@/hooks/useTasks";
+import { NOTION_STATUSES, STATUS_LABELS } from "@/lib/statusConfig";
 
 const Dashboard = () => {
   const [view, setView] = useState<"list" | "kanban">("list");
@@ -60,8 +61,15 @@ const Dashboard = () => {
                 key={task.id}
                 task={task}
                 onComplete={
-                  task.status !== "done"
-                    ? () => moveTask(task.id, task.status === "uncategorized" ? "todo" : task.status === "todo" ? "in_progress" : "done")
+                  task.status !== NOTION_STATUSES.DONE
+                    ? () => moveTask(
+                        task.id,
+                        task.status === NOTION_STATUSES.UNCATEGORIZED
+                          ? NOTION_STATUSES.TODO
+                          : task.status === NOTION_STATUSES.TODO
+                          ? NOTION_STATUSES.IN_PROGRESS
+                          : NOTION_STATUSES.DONE
+                      )
                     : undefined
                 }
                 onArchive={() => archiveTask(task.id)}
@@ -73,8 +81,8 @@ const Dashboard = () => {
         <div className="flex flex-1 gap-3 overflow-x-auto pb-4 snap-x snap-mandatory">
           <div className="snap-center shrink-0">
             <KanbanColumn
-              title="Uncategorized"
-              status="uncategorized"
+              title={STATUS_LABELS[NOTION_STATUSES.UNCATEGORIZED]}
+              status={NOTION_STATUSES.UNCATEGORIZED}
               tasks={tasks}
               onMoveTask={moveTask}
               onArchiveTask={archiveTask}
@@ -82,8 +90,8 @@ const Dashboard = () => {
           </div>
           <div className="snap-center shrink-0">
             <KanbanColumn
-              title="To Do"
-              status="todo"
+              title={STATUS_LABELS[NOTION_STATUSES.TODO]}
+              status={NOTION_STATUSES.TODO}
               tasks={tasks}
               onMoveTask={moveTask}
               onArchiveTask={archiveTask}
@@ -91,8 +99,8 @@ const Dashboard = () => {
           </div>
           <div className="snap-center shrink-0">
             <KanbanColumn
-              title="In Progress"
-              status="in_progress"
+              title={STATUS_LABELS[NOTION_STATUSES.IN_PROGRESS]}
+              status={NOTION_STATUSES.IN_PROGRESS}
               tasks={tasks}
               onMoveTask={moveTask}
               onArchiveTask={archiveTask}
@@ -100,8 +108,8 @@ const Dashboard = () => {
           </div>
           <div className="snap-center shrink-0">
             <KanbanColumn
-              title="Done"
-              status="done"
+              title={STATUS_LABELS[NOTION_STATUSES.DONE]}
+              status={NOTION_STATUSES.DONE}
               tasks={tasks}
               onMoveTask={moveTask}
               onArchiveTask={archiveTask}

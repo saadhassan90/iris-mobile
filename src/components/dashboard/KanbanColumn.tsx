@@ -2,21 +2,19 @@ import { useState } from "react";
 import { Task, TaskStatus } from "@/hooks/useTasks";
 import TaskCard from "./TaskCard";
 import { cn } from "@/lib/utils";
+import {
+  STATUS_COLORS,
+  STATUS_LABELS,
+  getNextStatus,
+} from "@/lib/statusConfig";
 
 interface KanbanColumnProps {
-  title: string;
+  title?: string;
   status: TaskStatus;
   tasks: Task[];
   onMoveTask: (id: string, status: TaskStatus) => void;
   onArchiveTask: (id: string) => void;
 }
-
-const columnColors: Record<TaskStatus, string> = {
-  uncategorized: "border-orange-500/50",
-  todo: "border-muted-foreground/30",
-  in_progress: "border-primary/50",
-  done: "border-green-500/50",
-};
 
 const KanbanColumn = ({
   title,
@@ -28,12 +26,9 @@ const KanbanColumn = ({
   const [isDragOver, setIsDragOver] = useState(false);
   const filteredTasks = tasks.filter((task) => task.status === status);
   
-  const getNextStatus = (current: TaskStatus): TaskStatus | null => {
-    if (current === "uncategorized") return "todo";
-    if (current === "todo") return "in_progress";
-    if (current === "in_progress") return "done";
-    return null;
-  };
+  // Use provided title or fall back to the configured label
+  const displayTitle = title ?? STATUS_LABELS[status];
+  const columnColor = STATUS_COLORS[status] ?? "border-muted-foreground/30";
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -53,6 +48,8 @@ const KanbanColumn = ({
     }
   };
 
+  const nextStatus = getNextStatus(status);
+
   return (
     <div
       onDragOver={handleDragOver}
@@ -60,12 +57,12 @@ const KanbanColumn = ({
       onDrop={handleDrop}
       className={cn(
         "flex h-full min-w-[280px] flex-col rounded-xl border-2 bg-card p-3 transition-colors",
-        columnColors[status],
+        columnColor,
         isDragOver && "bg-accent/50 border-primary"
       )}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="font-semibold">{title}</h3>
+        <h3 className="font-semibold">{displayTitle}</h3>
         <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
           {filteredTasks.length}
         </span>
@@ -84,8 +81,8 @@ const KanbanColumn = ({
               compact
               draggable
               onComplete={
-                getNextStatus(status)
-                  ? () => onMoveTask(task.id, getNextStatus(status)!)
+                nextStatus
+                  ? () => onMoveTask(task.id, nextStatus)
                   : undefined
               }
               onArchive={() => onArchiveTask(task.id)}
