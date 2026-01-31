@@ -12,17 +12,17 @@ const NOTION_DATABASE_ID = "14b374dfd4ed81fda2b0000bc39f6568";
 
 // Status mapping between app and Notion
 const statusToNotion: Record<string, string> = {
-  uncategorized: "Uncategorized",
+  uncategorized: "Not Started",
   todo: "Not Started",
   in_progress: "In Progress",
   done: "Complete🙌",
 };
 
 const statusFromNotion: Record<string, string> = {
-  Uncategorized: "uncategorized",
   "Not Started": "todo",
   "In Progress": "in_progress",
   "Complete🙌": "done",
+  "IRIS Generated": "uncategorized",
 };
 
 interface NotionPage {
