@@ -73,6 +73,7 @@ const Dashboard = () => {
                     : undefined
                 }
                 onArchive={() => archiveTask(task.id)}
+                onStatusChange={(newStatus) => moveTask(task.id, newStatus)}
               />
             ))
           )}
