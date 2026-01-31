@@ -22,12 +22,13 @@ export const ALL_STATUSES: NotionStatus[] = [
   NOTION_STATUSES.DONE,
 ];
 
-// Display labels for UI (can be customized separately from Notion names)
+// Display labels for UI - directly use Notion status names for consistency
+// When Notion column names change, update NOTION_STATUSES above and labels auto-sync
 export const STATUS_LABELS: Record<NotionStatus, string> = {
-  [NOTION_STATUSES.UNCATEGORIZED]: "Uncategorized",
-  [NOTION_STATUSES.TODO]: "To Do",
-  [NOTION_STATUSES.IN_PROGRESS]: "In Progress",
-  [NOTION_STATUSES.DONE]: "Done",
+  [NOTION_STATUSES.UNCATEGORIZED]: NOTION_STATUSES.UNCATEGORIZED,
+  [NOTION_STATUSES.TODO]: NOTION_STATUSES.TODO,
+  [NOTION_STATUSES.IN_PROGRESS]: NOTION_STATUSES.IN_PROGRESS,
+  [NOTION_STATUSES.DONE]: NOTION_STATUSES.DONE,
 };
 
 // Column border colors for Kanban view
