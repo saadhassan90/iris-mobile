@@ -124,6 +124,51 @@ export type Database = {
           },
         ]
       }
+      tasks: {
+        Row: {
+          archived: boolean | null
+          context: string | null
+          created_at: string | null
+          due_date: string | null
+          id: string
+          notion_page_id: string | null
+          source: string
+          status: string
+          synced_at: string | null
+          title: string
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          archived?: boolean | null
+          context?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          notion_page_id?: string | null
+          source?: string
+          status?: string
+          synced_at?: string | null
+          title: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          archived?: boolean | null
+          context?: string | null
+          created_at?: string | null
+          due_date?: string | null
+          id?: string
+          notion_page_id?: string | null
+          source?: string
+          status?: string
+          synced_at?: string | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
