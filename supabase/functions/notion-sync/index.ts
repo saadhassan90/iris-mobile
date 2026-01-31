@@ -8,7 +8,8 @@ const corsHeaders = {
 };
 
 // Notion database ID for Saad's To-Do List
-const NOTION_DATABASE_ID = "14b374dfd4ed81fda2b0000bc39f6568";
+// NOTE: this must be the database's 32-char ID (not the ?v= view ID).
+const NOTION_DATABASE_ID = "14b374dfd4ed80059129fba94668d6f5";
 
 // Status mapping between app and Notion
 const statusToNotion: Record<string, string> = {
