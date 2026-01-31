@@ -86,6 +86,7 @@ const KanbanColumn = ({
                   : undefined
               }
               onArchive={() => onArchiveTask(task.id)}
+              onStatusChange={(newStatus) => onMoveTask(task.id, newStatus)}
             />
           ))
         )}
