@@ -91,31 +91,30 @@ const TaskFilters = ({ filters, onFiltersChange, actions }: TaskFiltersProps) =>
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Search bar with action buttons */}
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Search tasks..."
-            value={filters.search}
-            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-            className="pl-9 pr-9 rounded-full"
-          />
-          {filters.search && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full"
-              onClick={() => onFiltersChange({ ...filters, search: "" })}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          )}
-        </div>
-        {actions}
+      {/* Search bar */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          placeholder="Search tasks..."
+          value={filters.search}
+          onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+          className="pl-9 pr-9 rounded-full"
+        />
+        {filters.search && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full"
+            onClick={() => onFiltersChange({ ...filters, search: "" })}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        )}
       </div>
-      {/* Filter bar */}
-      <div className="flex items-center gap-2 flex-wrap">
+
+      {/* Filter bar with actions on the right */}
+      <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap flex-1">
         <Popover open={filterOpen} onOpenChange={setFilterOpen}>
           <PopoverTrigger asChild>
             <Button
@@ -320,6 +319,8 @@ const TaskFilters = ({ filters, onFiltersChange, actions }: TaskFiltersProps) =>
             />
           </Badge>
         )}
+        </div>
+        {actions}
       </div>
     </div>
   );
