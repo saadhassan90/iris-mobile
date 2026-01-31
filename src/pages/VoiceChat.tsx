@@ -17,15 +17,17 @@ const VoiceChat = () => {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col h-full min-h-0 w-full">
+    <div className="fixed inset-0 z-50 bg-background">
       {/* @ts-ignore - Custom element from ElevenLabs widget */}
       <elevenlabs-convai 
         agent-id={ELEVENLABS_AGENT_ID}
         variant="full"
         style={{ 
-          width: "100%", 
-          height: "100%",
-          flex: 1,
+          width: "100vw", 
+          height: "100vh",
+          position: "absolute",
+          top: 0,
+          left: 0,
         }}
       />
     </div>
