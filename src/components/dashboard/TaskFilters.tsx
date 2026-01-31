@@ -38,6 +38,7 @@ export interface TaskFiltersState {
 interface TaskFiltersProps {
   filters: TaskFiltersState;
   onFiltersChange: (filters: TaskFiltersState) => void;
+  actions?: React.ReactNode;
 }
 
 const ALL_SOURCES: TaskSource[] = ["voice", "manual", "email", "fireflies", "notion", "other"];
@@ -60,7 +61,7 @@ export const defaultFilters: TaskFiltersState = {
   sortOrder: "desc",
 };
 
-const TaskFilters = ({ filters, onFiltersChange }: TaskFiltersProps) => {
+const TaskFilters = ({ filters, onFiltersChange, actions }: TaskFiltersProps) => {
   const [filterOpen, setFilterOpen] = useState(false);
 
   const activeFilterCount = 
@@ -90,27 +91,29 @@ const TaskFilters = ({ filters, onFiltersChange }: TaskFiltersProps) => {
 
   return (
     <div className="flex flex-col gap-3">
-      {/* Search bar */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder="Search tasks..."
-          value={filters.search}
-          onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
-          className="pl-9 pr-9 rounded-full"
-        />
-        {filters.search && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full"
-            onClick={() => onFiltersChange({ ...filters, search: "" })}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        )}
+      {/* Search bar with action buttons */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            placeholder="Search tasks..."
+            value={filters.search}
+            onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
+            className="pl-9 pr-9 rounded-full"
+          />
+          {filters.search && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded-full"
+              onClick={() => onFiltersChange({ ...filters, search: "" })}
+            >
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+        {actions}
       </div>
-
       {/* Filter bar */}
       <div className="flex items-center gap-2 flex-wrap">
         <Popover open={filterOpen} onOpenChange={setFilterOpen}>
